@@ -166,6 +166,7 @@ import Layout from '../layouts/Layout.astro';
         let toggleHtml = '';
         if (isSeller) {
           toggleHtml = `
+            <a href="/seller/setup" class="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100">Seller profile</a>
             <span class="text-sm text-slate-500 mr-1">Mode:</span>
             <button type="button" id="discover-mode-toggle" class="text-sm font-medium px-3 py-1.5 rounded-lg ${mode === 'buying' ? 'bg-violet-100 text-violet-800' : 'bg-slate-100 text-slate-700'}">
               ${mode === 'buying' ? 'Buying' : 'Selling'}

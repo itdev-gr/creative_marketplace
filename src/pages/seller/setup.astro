@@ -101,9 +101,21 @@ import { SELLER_ROLES } from '../../lib/types/role';
       }
     });
 
+    function prefillForm() {
+      const user = getCurrentUser();
+      const p = user?.profile;
+      if (!p || p.accountType !== 'seller') return;
+      const roleSelect = form?.querySelector('[name="sellerRole"]') as HTMLSelectElement | null;
+      const bioInput = form?.querySelector('[name="bio"]') as HTMLTextAreaElement | null;
+      if (roleSelect && p.sellerRole) roleSelect.value = p.sellerRole;
+      if (bioInput && p.sellerProfile?.bio) bioInput.value = p.sellerProfile.bio;
+    }
+
     subscribeAuth(() => {
       if (!redirectIfNotSeller()) return;
+      prefillForm();
     });
     if (!redirectIfNotSeller()) void 0;
+    if (redirectIfNotSeller()) prefillForm();
   </script>
 </Layout>

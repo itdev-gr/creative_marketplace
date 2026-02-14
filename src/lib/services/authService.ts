@@ -248,6 +248,24 @@ export async function updateCanBuy(uid: string, canBuy: boolean): Promise<void> 
   await updateDoc(ref, { canBuy });
 }
 
+/**
+ * Convert an existing user (accountType 'user') to seller: add sellerCode, set accountType and mode.
+ * Caller must ensure the current user is the owner. Redirect to /seller/setup after.
+ */
+export async function becomeSeller(uid: string): Promise<void> {
+  const snap = await getDoc(doc(db, USERS_COLLECTION, uid));
+  if (!snap.exists()) throw new AuthError('Profile not found.', 'unknown');
+  const data = snap.data();
+  if (data?.sellerCode) return;
+  const sellerCode = await generateUniqueSellerCode();
+  await updateDoc(doc(db, USERS_COLLECTION, uid), {
+    accountType: 'seller',
+    sellerCode,
+    mode: 'selling',
+    sellerRole: null,
+  });
+}
+
 /** Update seller profile (sellerRole, optional bio). For seller setup and edit. */
 export async function updateSellerProfile(
   uid: string,
