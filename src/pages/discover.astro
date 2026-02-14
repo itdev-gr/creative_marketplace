@@ -128,6 +128,15 @@ import Layout from '../layouts/Layout.astro';
       (document.getElementById('search-what') as HTMLElement).textContent = title;
     }
 
+    function showSignInToSeeCreators() {
+      const popularEl = document.getElementById('section-popular');
+      const featuredEl = document.getElementById('section-featured');
+      if (!popularEl || !featuredEl) return;
+      const msg = '<div class="flex gap-4 min-w-max"><p class="text-slate-500 py-8"><a href="/login" class="text-violet-600 hover:underline">Sign in</a> to see creators.</p></div>';
+      popularEl.innerHTML = msg;
+      featuredEl.innerHTML = msg;
+    }
+
     async function loadSection(role: Role) {
       const popularEl = document.getElementById('section-popular');
       const featuredEl = document.getElementById('section-featured');
@@ -139,7 +148,8 @@ import Layout from '../layouts/Layout.astro';
         const mid = Math.ceil(all.length / 2);
         renderCards(popularEl, all.slice(0, mid));
         renderCards(featuredEl, all.slice(mid));
-      } catch {
+      } catch (err) {
+        console.error('[Discover] loadSection failed', err);
         renderCards(popularEl, []);
         renderCards(featuredEl, []);
       }
@@ -175,14 +185,19 @@ import Layout from '../layouts/Layout.astro';
         if (!role || !CREATIVE_ROLES.includes(role)) return;
         activeRole = role;
         setActiveTab(activeRole);
-        loadSection(activeRole);
+        if (getCurrentUser()) loadSection(activeRole);
+        else showSignInToSeeCreators();
       });
     });
 
     subscribeAuth((user) => {
       renderHeaderNav(!!user);
+      if (user) {
+        loadSection(activeRole);
+      } else {
+        showSignInToSeeCreators();
+      }
     });
     renderHeaderNav(!!getCurrentUser());
-    loadSection(activeRole);
   </script>
 </Layout>
