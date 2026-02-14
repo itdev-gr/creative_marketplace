@@ -49,7 +49,13 @@ Astro + Firebase (Auth, Firestore) creative marketplace with role-based booking.
 - `npx eslint .` – run ESLint
 - `npx prettier --check .` – check formatting
 
-The app uses `output: "server"` (Node adapter) so the profile page can use dynamic routes. Run the built app with `node ./dist/server/entry.mjs` (or use your preferred process manager).
+The app uses `output: "server"` with the **Vercel** adapter so the profile page can use dynamic routes.
+
+### Deploy on Vercel
+
+1. Push the repo to GitHub and import the project in [Vercel](https://vercel.com).
+2. Add **Environment Variables** in Vercel (Settings → Environment Variables) for all `PUBLIC_FIREBASE_*` keys (see `.env.example`). Apply to Production and Preview.
+3. Deploy. Vercel will run `npm run build`; the build output is compatible with Vercel Serverless.
 
 ## Booking business rules
 
