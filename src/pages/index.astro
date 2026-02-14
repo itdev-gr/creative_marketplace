@@ -1,0 +1,67 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Creative Marketplace">
+  <div class="min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="border-b border-slate-200/80 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        <a href="/" class="text-lg font-semibold text-slate-800 tracking-tight hover:text-violet-600 transition-colors">
+          Creative Marketplace
+        </a>
+        <nav class="flex items-center gap-3">
+          <a
+            href="/login"
+            class="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors"
+          >
+            Sign in
+          </a>
+          <a
+            href="/register"
+            class="text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 px-4 py-2 rounded-lg shadow-sm transition-colors"
+          >
+            Register
+          </a>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Hero -->
+    <main class="flex-1 flex items-center justify-center px-4 py-16 sm:py-24">
+      <div class="max-w-2xl mx-auto text-center">
+        <h1 class="text-4xl sm:text-5xl font-bold text-slate-900 tracking-tight">
+          Find creators.
+          <span class="text-violet-600">Book with confidence.</span>
+        </h1>
+        <p class="mt-5 text-lg text-slate-600 leading-relaxed">
+          Connect with influencers, videographers, editors and models. One place for all your creative collaborations.
+        </p>
+        <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <a
+            href="/register"
+            class="w-full sm:w-auto inline-flex items-center justify-center font-semibold text-white bg-violet-600 hover:bg-violet-500 px-6 py-3 rounded-xl shadow-lg shadow-violet-500/25 hover:shadow-violet-500/30 transition-all"
+          >
+            Get started
+          </a>
+          <a
+            href="/login"
+            class="w-full sm:w-auto inline-flex items-center justify-center font-medium text-slate-700 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 px-6 py-3 rounded-xl transition-colors"
+          >
+            Sign in
+          </a>
+        </div>
+        <p class="mt-8 text-sm text-slate-500">
+          Already have an account? <a href="/login" class="font-medium text-violet-600 hover:text-violet-500">Sign in</a>
+        </p>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-200/80 py-6 text-center text-sm text-slate-500">
+      <div class="max-w-6xl mx-auto px-4">
+        © {new Date().getFullYear()} Creative Marketplace
+      </div>
+    </footer>
+  </div>
+</Layout>

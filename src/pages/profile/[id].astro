@@ -1,0 +1,19 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import BookNowButton from '../../components/BookNowButton.astro';
+
+export const prerender = false;
+
+const { id } = Astro.params;
+if (!id) throw new Error('Profile id required');
+---
+
+<Layout title={`Profile – Creative Marketplace`}>
+  <main class="min-h-screen p-6 max-w-lg mx-auto">
+    <a href="/" class="text-sm text-indigo-600 hover:underline mb-4 inline-block">← Home</a>
+    <h1 class="text-xl font-bold mb-4">Profile</h1>
+    <div class="border border-gray-200 rounded-lg p-4">
+      <BookNowButton profileId={id} />
+    </div>
+  </main>
+</Layout>
