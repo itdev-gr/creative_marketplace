@@ -7,8 +7,12 @@ export const prerender = false;
 const { sellerCode } = Astro.params;
 let profile: Awaited<ReturnType<typeof import('../../lib/services/authService').getProfileBySellerCode>> = null;
 if (sellerCode) {
-  const { getProfileBySellerCode } = await import('../../lib/services/authService.js');
-  profile = await getProfileBySellerCode(sellerCode);
+  try {
+    const { getProfileBySellerCode } = await import('../../lib/services/authService.js');
+    profile = await getProfileBySellerCode(sellerCode);
+  } catch {
+    profile = null;
+  }
 }
 ---
 

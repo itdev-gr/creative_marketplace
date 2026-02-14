@@ -4,7 +4,10 @@ import Layout from '../../layouts/Layout.astro';
 
 <Layout title="My Profile – Creative Marketplace">
   <main class="min-h-screen p-6 max-w-lg mx-auto">
-    <a href="/discover" class="text-sm text-indigo-600 hover:underline mb-4 inline-block">← Discover</a>
+    <div class="flex items-center justify-between mb-4">
+      <a href="/discover" class="text-sm text-indigo-600 hover:underline">← Discover</a>
+      <button type="button" id="btn-logout" class="text-sm text-gray-600 hover:underline hidden">Logout</button>
+    </div>
     <h1 class="text-xl font-bold mb-4">My Profile</h1>
     <div id="profile-me-mount" class="border border-gray-200 rounded-lg p-4">
       <p class="text-slate-500">Loading…</p>
@@ -65,12 +68,15 @@ import Layout from '../../layouts/Layout.astro';
           ${p.sellerCode ? `<a href="/seller/${p.sellerCode}" class="mt-2 inline-block text-sm text-indigo-600 hover:underline">View my seller page</a>` : ''}
         `;
       }
-      html += '<p class="mt-4"><button type="button" id="btn-logout" class="text-sm text-gray-600 hover:underline">Logout</button></p>';
       if (mount) mount.innerHTML = html;
 
-      document.getElementById('btn-logout')?.addEventListener('click', () => {
+      const logoutBtn = document.getElementById('btn-logout');
+      if (logoutBtn) {
+        logoutBtn.classList.remove('hidden');
+        logoutBtn.addEventListener('click', () => {
         signOut().then(() => { window.location.href = '/'; });
-      });
+        });
+      }
       document.getElementById('btn-enable-buyer')?.addEventListener('click', async () => {
         const uid = getCurrentUser()?.id;
         if (!uid) return;
