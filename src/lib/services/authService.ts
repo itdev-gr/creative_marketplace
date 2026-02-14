@@ -56,6 +56,16 @@ export async function signUp(
     console.log(AUTH_LOG, 'SignUp success', { uid, role });
     return userCredential.user;
   } catch (err) {
+    console.error(AUTH_LOG, 'SignUp error (raw)', err);
+    const code = err && typeof err === 'object' && 'code' in err ? (err as { code: string }).code : '';
+    if (code === 'permission-denied' || code === 'firestore/permission-denied') {
+      const firestoreError = new AuthError(
+        'Profile could not be created. Check that Firestore rules are deployed and allow creating your user document.',
+        'unknown'
+      );
+      console.warn(AUTH_LOG, 'SignUp failed', { email, code: 'permission-denied' });
+      throw firestoreError;
+    }
     const mapped = mapFirebaseAuthError(err);
     console.warn(AUTH_LOG, 'SignUp failed', { email, code: mapped.code });
     throw mapped;

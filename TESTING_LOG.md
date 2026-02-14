@@ -94,6 +94,7 @@ Use these to confirm whether login and register are working and why they fail wh
 - **Blank page / white screen** → Check browser console (F12) for errors; check that all `PUBLIC_FIREBASE_*` env vars are set.
 - **"Firebase: Error (auth/…)"** → Auth config or Auth not enabled in Firebase Console.
 - **Permission denied / missing index** → Firestore rules or indexes; run `firebase deploy --only firestore:rules` and `firebase deploy --only firestore:indexes`.
+- **Register fails with "Something went wrong" after "Firebase user created"** → Usually Firestore permission-denied when writing the user profile. Check the Console for `[Auth] SignUp error (raw)` to see the real error; then run `firebase deploy --only firestore:rules` for your project so the `users` create rule is active.
 - **Redirect not working** → Check that login/register success path uses `window.location.href = '/discover'`.
 - **Discover shows "No creators yet"** → Normal if no users with role influencer/videographer/editor/model exist; register one with a creative role and retry.
 - **Book Now does nothing or errors** → Check console; ensure `canBook` allows the combination (no self-book, target not "user").
