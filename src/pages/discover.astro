@@ -11,6 +11,7 @@ import Layout from '../layouts/Layout.astro';
           Creative Marketplace
         </a>
         <nav id="discover-header-nav" class="flex items-center gap-3">
+          <a href="/register" class="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100">Become a seller</a>
           <a href="/login" class="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100">Sign in</a>
           <a href="/register" class="text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 px-4 py-2 rounded-lg">Register</a>
         </nav>
@@ -195,6 +196,7 @@ import Layout from '../layouts/Layout.astro';
         }
       } else {
         nav.innerHTML = `
+          <a href="/register" class="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100">Become a seller</a>
           <a href="/login" class="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100">Sign in</a>
           <a href="/register" class="text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 px-4 py-2 rounded-lg">Register</a>
         `;
