@@ -14,7 +14,7 @@ export interface UserProfile {
   sellerRole?: Role;
   /** Seller's current mode; present when accountType === 'seller'. Default 'selling'. */
   mode?: 'selling' | 'buying';
-  /** User (non-seller) opt-in to allow booking others; present when accountType === 'user'. Default false. */
+  /** Buyer opt-in to allow booking others; present when accountType === 'buyer'. Default false. */
   canBuy?: boolean;
   /** Optional seller bio etc. */
   sellerProfile?: { bio?: string };

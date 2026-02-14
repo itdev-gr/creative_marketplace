@@ -2,7 +2,7 @@ import type { UserProfile } from '../types/user.js';
 
 /**
  * Determines if the current user (booker) can book the provider.
- * - Booker can book if: (user with canBuy === true) OR (seller with mode === 'buying').
+ * - Booker can book if: (buyer with canBuy === true) OR (seller with mode === 'buying').
  * - Provider must be a seller (accountType === 'seller' with sellerRole).
  * - No self-booking.
  */
@@ -22,7 +22,7 @@ export function canBook(
   if (!providerIsSeller) return false;
 
   const bookerCanActAsBuyer =
-    (bookerProfile.accountType === 'user' && bookerProfile.canBuy === true) ||
+    (bookerProfile.accountType === 'buyer' && bookerProfile.canBuy === true) ||
     (bookerProfile.accountType === 'seller' && bookerProfile.mode === 'buying');
 
   return bookerCanActAsBuyer;

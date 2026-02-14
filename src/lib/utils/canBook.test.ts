@@ -7,7 +7,7 @@ function userProfile(overrides: Partial<UserProfile> & { id: string }): UserProf
     id: overrides.id,
     userCode: 'uc',
     email: 'e@e.com',
-    accountType: 'user',
+    accountType: 'buyer',
     canBuy: false,
     ...overrides,
   };

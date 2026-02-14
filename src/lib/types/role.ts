@@ -16,10 +16,10 @@ export function isRole(s: string): s is Role {
   return SELLER_ROLES.includes(s as Role);
 }
 
-/** Account type at registration: user (buyer) or seller. */
-export type AccountType = 'user' | 'seller';
+/** Account type at registration: buyer or seller. */
+export type AccountType = 'buyer' | 'seller';
 
-export const ACCOUNT_TYPES: AccountType[] = ['user', 'seller'];
+export const ACCOUNT_TYPES: AccountType[] = ['buyer', 'seller'];
 
 export function isAccountType(s: string): s is AccountType {
   return ACCOUNT_TYPES.includes(s as AccountType);
@@ -35,9 +35,9 @@ export function isSellerMode(s: string): s is SellerMode {
 }
 
 /** Legacy role value in Firestore (for backward compatibility when migrating). */
-export type LegacyRole = 'user' | Role;
+export type LegacyRole = 'buyer' | Role;
 
-export const LEGACY_ROLES: LegacyRole[] = ['user', ...SELLER_ROLES];
+export const LEGACY_ROLES: LegacyRole[] = ['buyer', ...SELLER_ROLES];
 
 export function isLegacyRole(s: string): s is LegacyRole {
   return LEGACY_ROLES.includes(s as LegacyRole);

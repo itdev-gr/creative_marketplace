@@ -38,16 +38,17 @@ function mapFirebaseAuthError(err: unknown): AuthError {
 const AUTH_LOG = '[Auth]';
 
 function dataToProfile(id: string, data: Record<string, unknown>): UserProfile {
-  const accountType = data?.accountType as AccountType | undefined;
-  const hasNewSchema = accountType === 'user' || accountType === 'seller';
+  const rawAccountType = data?.accountType as string | undefined;
+  const hasNewSchema = (rawAccountType === 'user' || rawAccountType === 'buyer' || rawAccountType === 'seller') && data?.userCode;
   if (hasNewSchema && data?.userCode) {
+    const accountType: AccountType = rawAccountType === 'user' ? 'buyer' : (rawAccountType as AccountType);
     const profile: UserProfile = {
       id,
       userCode: data.userCode as string,
       email: (data?.email as string) ?? '',
       displayName: data?.displayName as string | undefined,
       createdAt: data?.createdAt,
-      accountType: accountType as AccountType,
+      accountType,
     };
     if (accountType === 'seller') {
       profile.sellerCode = data?.sellerCode as string | undefined;
@@ -59,9 +60,9 @@ function dataToProfile(id: string, data: Record<string, unknown>): UserProfile {
     }
     return profile;
   }
-  const legacyRole = data?.role;
-  if (!legacyRole || !isLegacyRole(legacyRole)) return null as unknown as UserProfile;
-  const account: AccountType = legacyRole === 'user' ? 'user' : 'seller';
+  const legacyRole = data?.role as string;
+  if (!legacyRole || (!isLegacyRole(legacyRole) && legacyRole !== 'user')) return null as unknown as UserProfile;
+  const account: AccountType = (legacyRole === 'user' || legacyRole === 'buyer') ? 'buyer' : 'seller';
   const profile: UserProfile = {
     id,
     userCode: (data?.userCode as string) ?? '',
@@ -101,7 +102,7 @@ export async function signUp(
       createdAt: serverTimestamp(),
     };
 
-    if (accountType === 'user') {
+    if (accountType === 'buyer') {
       await setDoc(doc(db, USERS_COLLECTION, uid), { ...base, canBuy: false });
     } else {
       const sellerCode = await generateUniqueSellerCode();
@@ -156,7 +157,7 @@ export async function getCurrentUserProfile(uid: string): Promise<UserProfile | 
 
 /**
  * Creates a user document in Firestore for an existing Auth user who has no profile yet
- * (e.g. legacy account or account created outside the app). Defaults to accountType 'user'.
+ * (e.g. legacy account or account created outside the app). Defaults to accountType 'buyer'.
  */
 export async function ensureUserDocForAuthUser(
   uid: string,
@@ -169,7 +170,7 @@ export async function ensureUserDocForAuthUser(
   const userCode = await generateUniqueUserCode();
   await setDoc(doc(db, USERS_COLLECTION, uid), {
     userCode,
-    accountType: 'user',
+    accountType: 'buyer',
     email: email || '',
     displayName: displayName ?? null,
     canBuy: false,
@@ -184,11 +185,11 @@ export async function getProfile(uid: string): Promise<UserProfile | null> {
   const data = snap.data();
   if (!data?.email) return null;
 
-  const hasNewSchema = (data.accountType === 'user' || data.accountType === 'seller') && data.userCode;
-  if (!hasNewSchema && isLegacyRole(data.role as string)) {
+  const hasNewSchema = (data.accountType === 'user' || data.accountType === 'buyer' || data.accountType === 'seller') && data.userCode;
+  if (!hasNewSchema && (isLegacyRole(data.role as string) || data.role === 'user')) {
     const userCode = await generateUniqueUserCode();
     const legacyRole = data.role as string;
-    const accountType: AccountType = legacyRole === 'user' ? 'user' : 'seller';
+    const accountType: AccountType = (legacyRole === 'user' || legacyRole === 'buyer') ? 'buyer' : 'seller';
     const updates: Record<string, unknown> = {
       userCode,
       accountType,
@@ -242,14 +243,14 @@ export async function updateMode(uid: string, mode: 'selling' | 'buying'): Promi
   await updateDoc(ref, { mode });
 }
 
-/** Set user's canBuy flag. Caller must ensure user is accountType 'user'. */
+/** Set canBuy flag. Caller must ensure account is accountType 'buyer'. */
 export async function updateCanBuy(uid: string, canBuy: boolean): Promise<void> {
   const ref = doc(db, USERS_COLLECTION, uid);
   await updateDoc(ref, { canBuy });
 }
 
 /**
- * Convert an existing user (accountType 'user') to seller: add sellerCode, set accountType and mode.
+ * Convert an existing buyer (accountType 'buyer') to seller: add sellerCode, set accountType and mode.
  * Caller must ensure the current user is the owner. Redirect to /seller/setup after.
  */
 export async function becomeSeller(uid: string): Promise<void> {

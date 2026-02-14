@@ -35,7 +35,7 @@ export interface GetBookingsOptions {
 }
 
 function toBookerRole(profile: UserProfile): BookerRole {
-  if (profile.accountType === 'user') return 'user';
+  if (profile.accountType === 'buyer') return 'buyer';
   return (profile.sellerRole as BookerRole) ?? 'influencer';
 }
 

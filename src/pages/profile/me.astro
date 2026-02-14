@@ -36,11 +36,11 @@ import Layout from '../../layouts/Layout.astro';
         return;
       }
       let html = `
-        <p class="font-medium text-gray-900">${p.displayName ?? 'User'}</p>
+        <p class="font-medium text-gray-900">${p.displayName ?? 'Buyer'}</p>
         <p class="text-sm text-gray-500">${p.email ?? ''}</p>
         <p class="text-sm text-gray-500 mt-1">User code: <code class="bg-gray-100 px-1 rounded">${p.userCode}</code></p>
       `;
-      if (p.accountType === 'user') {
+      if (p.accountType === 'buyer') {
         if (p.canBuy) {
           html += '<p class="mt-3 text-sm text-green-700">You can book creators.</p>';
         } else {

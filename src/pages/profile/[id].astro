@@ -24,8 +24,8 @@ if (id) {
       <>
         <h1 class="text-xl font-bold mb-4">Profile</h1>
         <div class="border border-gray-200 rounded-lg p-4">
-          <p class="font-medium text-gray-900">{profile.displayName ?? 'User'}</p>
-          <p class="text-sm text-gray-500">{profile.accountType === 'seller' ? `Seller · ${profile.sellerRole ?? ''}` : 'User'}</p>
+          <p class="font-medium text-gray-900">{profile.displayName ?? 'Buyer'}</p>
+          <p class="text-sm text-gray-500">{profile.accountType === 'seller' ? `Seller · ${profile.sellerRole ?? ''}` : 'Buyer'}</p>
           {profile.accountType === 'seller' && profile.sellerCode && (
             <a href={`/seller/${profile.sellerCode}`} class="mt-2 inline-block text-sm text-indigo-600 hover:underline">View my seller profile</a>
           )}

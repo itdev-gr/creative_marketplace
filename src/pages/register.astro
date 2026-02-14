@@ -35,8 +35,8 @@ import Layout from '../layouts/Layout.astro';
           <span class="block text-sm font-medium text-gray-700 mb-2">I want to</span>
           <div class="space-y-2">
             <label class="flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="accountType" value="user" class="rounded-full border-gray-300 text-indigo-600 focus:ring-indigo-500" checked />
-              <span>Register as User (browse and buy services later)</span>
+              <input type="radio" name="accountType" value="buyer" class="rounded-full border-gray-300 text-indigo-600 focus:ring-indigo-500" checked />
+              <span>Register as Buyer (browse and buy services later)</span>
             </label>
             <label class="flex items-center gap-2 cursor-pointer">
               <input type="radio" name="accountType" value="seller" class="rounded-full border-gray-300 text-indigo-600 focus:ring-indigo-500" />
@@ -86,8 +86,8 @@ import Layout from '../layouts/Layout.astro';
       const password = (form.querySelector('[name="password"]') as HTMLInputElement).value;
       const accountType = (form.querySelector('[name="accountType"]:checked') as HTMLInputElement)?.value as AccountType;
       const displayName = (form.querySelector('[name="displayName"]') as HTMLInputElement).value.trim() || undefined;
-      if (accountType !== 'user' && accountType !== 'seller') {
-        errorEl.textContent = 'Please choose User or Seller.';
+      if (accountType !== 'buyer' && accountType !== 'seller') {
+        errorEl.textContent = 'Please choose Buyer or Seller.';
         errorEl.classList.remove('hidden');
         submitBtn.disabled = false;
         return;
