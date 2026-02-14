@@ -91,6 +91,7 @@ import { ROLES } from '../lib/types/role';
       try {
         await signUp(email, password, role, displayName);
         console.log('[Register] Success, redirecting to /discover');
+        await new Promise((r) => setTimeout(r, 400));
         window.location.href = '/discover';
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Registration failed.';
