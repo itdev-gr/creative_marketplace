@@ -44,8 +44,8 @@ import { SELLER_ROLES } from '../../lib/types/role';
     </div>
   </main>
   <script>
-    import { subscribeAuth, getCurrentUser } from '../../lib/firebase/authState';
-    import { getCurrentUserProfile, updateSellerProfile } from '../../lib/services/authService';
+    import { subscribeAuth, getCurrentUser, isAuthReady } from '../../lib/firebase/authState';
+    import { updateSellerProfile } from '../../lib/services/authService';
     import { isRole } from '../../lib/types/role';
 
     const form = document.getElementById('seller-setup-form') as HTMLFormElement;
@@ -53,6 +53,7 @@ import { SELLER_ROLES } from '../../lib/types/role';
     const submitBtn = document.getElementById('seller-setup-submit') as HTMLButtonElement;
 
     function redirectIfNotSeller() {
+      if (!isAuthReady()) return true;
       const user = getCurrentUser();
       if (!user) {
         window.location.href = '/login';

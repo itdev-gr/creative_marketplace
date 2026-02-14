@@ -27,6 +27,11 @@ export function getCurrentUser(): AuthStateUser | null {
   return cachedUser;
 }
 
+/** True after the first onAuthStateChanged has run (auth state is known). */
+export function isAuthReady(): boolean {
+  return authReady;
+}
+
 if (typeof window !== 'undefined') {
   onAuthStateChanged(auth, async (firebaseUser) => {
     if (!firebaseUser) {
@@ -38,6 +43,15 @@ if (typeof window !== 'undefined') {
     let profile: UserProfile | null = null;
     try {
       profile = await getCurrentUserProfile(firebaseUser.uid);
+      if (!profile) {
+        const { ensureUserDocForAuthUser } = await import('../services/authService.js');
+        await ensureUserDocForAuthUser(
+          firebaseUser.uid,
+          firebaseUser.email ?? '',
+          firebaseUser.displayName ?? undefined
+        );
+        profile = await getCurrentUserProfile(firebaseUser.uid);
+      }
     } catch {
       // Still treat as logged-in; profile may load later or fail due to permissions
     }

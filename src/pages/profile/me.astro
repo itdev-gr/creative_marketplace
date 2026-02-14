@@ -11,7 +11,7 @@ import Layout from '../../layouts/Layout.astro';
     </div>
   </main>
   <script>
-    import { subscribeAuth, getCurrentUser } from '../../lib/firebase/authState';
+    import { subscribeAuth, getCurrentUser, isAuthReady } from '../../lib/firebase/authState';
     import { signOut } from '../../lib/services/authService';
     import { updateMode, updateCanBuy } from '../../lib/services/authService';
 
@@ -19,6 +19,10 @@ import Layout from '../../layouts/Layout.astro';
 
     function render() {
       if (!mount) return;
+      if (!isAuthReady()) {
+        mount.innerHTML = '<p class="text-slate-500">Loading…</p>';
+        return;
+      }
       const user = getCurrentUser();
       if (!user) {
         window.location.href = '/login';

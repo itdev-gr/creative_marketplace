@@ -154,6 +154,29 @@ export async function getCurrentUserProfile(uid: string): Promise<UserProfile | 
   return getProfile(uid);
 }
 
+/**
+ * Creates a user document in Firestore for an existing Auth user who has no profile yet
+ * (e.g. legacy account or account created outside the app). Defaults to accountType 'user'.
+ */
+export async function ensureUserDocForAuthUser(
+  uid: string,
+  email: string,
+  displayName?: string | null
+): Promise<void> {
+  const snap = await getDoc(doc(db, USERS_COLLECTION, uid));
+  if (snap.exists()) return;
+
+  const userCode = await generateUniqueUserCode();
+  await setDoc(doc(db, USERS_COLLECTION, uid), {
+    userCode,
+    accountType: 'user',
+    email: email || '',
+    displayName: displayName ?? null,
+    canBuy: false,
+    createdAt: serverTimestamp(),
+  });
+}
+
 /** Fetch any user's profile by uid. Supports new schema and legacy (role-based) docs. */
 export async function getProfile(uid: string): Promise<UserProfile | null> {
   const snap = await getDoc(doc(db, USERS_COLLECTION, uid));
