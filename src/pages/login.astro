@@ -58,11 +58,14 @@ import Layout from '../layouts/Layout.astro';
       submitBtn.disabled = true;
       const email = (form.querySelector('[name="email"]') as HTMLInputElement).value.trim();
       const password = (form.querySelector('[name="password"]') as HTMLInputElement).value;
+      console.log('[Login] Form submit', { email });
       try {
         await signIn(email, password);
+        console.log('[Login] Success, redirecting to /discover');
         window.location.href = '/discover';
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Sign in failed.';
+        console.warn('[Login] Failed', { message: msg });
         errorEl.textContent = msg;
         errorEl.classList.remove('hidden');
       } finally {

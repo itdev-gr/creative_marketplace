@@ -34,37 +34,50 @@ function mapFirebaseAuthError(err: unknown): AuthError {
   );
 }
 
+const AUTH_LOG = '[Auth]';
+
 export async function signUp(
   email: string,
   password: string,
   role: Role,
   displayName?: string
 ): Promise<User> {
+  console.log(AUTH_LOG, 'SignUp attempt', { email, role });
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const { uid } = userCredential.user;
+    console.log(AUTH_LOG, 'Firebase user created', { uid });
     await setDoc(doc(db, USERS_COLLECTION, uid), {
       role,
       email,
       displayName: displayName ?? null,
       createdAt: serverTimestamp(),
     });
+    console.log(AUTH_LOG, 'SignUp success', { uid, role });
     return userCredential.user;
   } catch (err) {
-    throw mapFirebaseAuthError(err);
+    const mapped = mapFirebaseAuthError(err);
+    console.warn(AUTH_LOG, 'SignUp failed', { email, code: mapped.code });
+    throw mapped;
   }
 }
 
 export async function signIn(email: string, password: string): Promise<User> {
+  console.log(AUTH_LOG, 'SignIn attempt', { email });
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const uid = userCredential.user.uid;
+    console.log(AUTH_LOG, 'SignIn success', { uid });
     return userCredential.user;
   } catch (err) {
-    throw mapFirebaseAuthError(err);
+    const mapped = mapFirebaseAuthError(err);
+    console.warn(AUTH_LOG, 'SignIn failed', { email, code: mapped.code });
+    throw mapped;
   }
 }
 
 export function signOut(): Promise<void> {
+  console.log(AUTH_LOG, 'SignOut');
   return firebaseSignOut(auth);
 }
 

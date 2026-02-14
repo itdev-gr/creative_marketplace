@@ -87,11 +87,14 @@ import { ROLES } from '../lib/types/role';
       const password = (form.querySelector('[name="password"]') as HTMLInputElement).value;
       const role = (form.querySelector('[name="role"]') as HTMLSelectElement).value as Role;
       const displayName = (form.querySelector('[name="displayName"]') as HTMLInputElement).value.trim() || undefined;
+      console.log('[Register] Form submit', { email, role });
       try {
         await signUp(email, password, role, displayName);
+        console.log('[Register] Success, redirecting to /discover');
         window.location.href = '/discover';
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Registration failed.';
+        console.warn('[Register] Failed', { message: msg });
         errorEl.textContent = msg;
         errorEl.classList.remove('hidden');
       } finally {
