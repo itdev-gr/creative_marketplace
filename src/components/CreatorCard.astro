@@ -1,0 +1,30 @@
+---
+import type { CreatorCard as CreatorCardType } from '../lib/services/creatorsService';
+
+interface Props {
+  creator: CreatorCardType;
+}
+
+const { creator } = Astro.props;
+const initials = creator.displayName
+  ? creator.displayName
+      .split(/\s+/)
+      .map((w) => w[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase() || '?'
+  : '?';
+---
+
+<a
+  href={`/profile/${creator.id}`}
+  class="shrink-0 w-64 rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm hover:shadow-md hover:border-slate-300 transition-all block"
+>
+  <div class="aspect-4/3 bg-slate-100 flex items-center justify-center">
+    <span class="text-3xl font-semibold text-slate-400" aria-hidden="true">{initials}</span>
+  </div>
+  <div class="p-3">
+    <p class="font-medium text-slate-900 truncate">{creator.displayName}</p>
+    <p class="text-sm text-slate-500 capitalize">{creator.role}</p>
+  </div>
+</a>

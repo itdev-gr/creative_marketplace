@@ -60,7 +60,7 @@ import Layout from '../layouts/Layout.astro';
       const password = (form.querySelector('[name="password"]') as HTMLInputElement).value;
       try {
         await signIn(email, password);
-        window.location.href = '/';
+        window.location.href = '/discover';
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Sign in failed.';
         errorEl.textContent = msg;

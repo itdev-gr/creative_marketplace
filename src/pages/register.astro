@@ -89,7 +89,7 @@ import { ROLES } from '../lib/types/role';
       const displayName = (form.querySelector('[name="displayName"]') as HTMLInputElement).value.trim() || undefined;
       try {
         await signUp(email, password, role, displayName);
-        window.location.href = '/';
+        window.location.href = '/discover';
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Registration failed.';
         errorEl.textContent = msg;
