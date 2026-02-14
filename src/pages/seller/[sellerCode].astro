@@ -1,0 +1,40 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import BookNowButton from '../../components/BookNowButton.astro';
+
+export const prerender = false;
+
+const { sellerCode } = Astro.params;
+let profile: Awaited<ReturnType<typeof import('../../lib/services/authService').getProfileBySellerCode>> = null;
+if (sellerCode) {
+  const { getProfileBySellerCode } = await import('../../lib/services/authService.js');
+  profile = await getProfileBySellerCode(sellerCode);
+}
+---
+
+<Layout title={profile ? `${profile.displayName ?? 'Seller'} – Creative Marketplace` : 'Seller – Creative Marketplace'}>
+  <main class="min-h-screen p-6 max-w-lg mx-auto">
+    <a href="/discover" class="text-sm text-indigo-600 hover:underline mb-4 inline-block">← Discover</a>
+    {profile ? (
+      <>
+        <h1 class="text-xl font-bold mb-4">Seller profile</h1>
+        <div class="border border-gray-200 rounded-lg p-4 mb-4">
+          <p class="font-medium text-gray-900">{profile.displayName ?? 'Seller'}</p>
+          {profile.sellerRole && (
+            <p class="text-sm text-gray-500 capitalize">{profile.sellerRole}</p>
+          )}
+          {profile.sellerProfile?.bio && (
+            <p class="mt-2 text-sm text-gray-700">{profile.sellerProfile.bio}</p>
+          )}
+        </div>
+        <BookNowButton profileId={profile.id} />
+      </>
+    ) : (
+      <>
+        <h1 class="text-xl font-bold mb-4">Seller not found</h1>
+        <p class="text-gray-600">This seller profile does not exist or has been removed.</p>
+        <a href="/discover" class="mt-4 inline-block text-indigo-600 hover:underline">Browse discover</a>
+      </>
+    )}
+  </main>
+</Layout>

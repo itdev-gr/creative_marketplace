@@ -1,44 +1,81 @@
 import { describe, it, expect } from 'vitest';
 import { canBook } from './canBook';
-import type { Role } from '../types/role';
+import type { UserProfile } from '../types/user';
 
-const roles: Role[] = ['user', 'influencer', 'videographer', 'editor', 'model'];
-const creativeRoles: Role[] = ['influencer', 'videographer', 'editor', 'model'];
+function userProfile(overrides: Partial<UserProfile> & { id: string }): UserProfile {
+  return {
+    id: overrides.id,
+    userCode: 'uc',
+    email: 'e@e.com',
+    accountType: 'user',
+    canBuy: false,
+    ...overrides,
+  };
+}
+
+function sellerProfile(
+  overrides: Partial<UserProfile> & { id: string; mode?: 'selling' | 'buying' }
+): UserProfile {
+  return {
+    id: overrides.id,
+    userCode: 'uc',
+    email: 'e@e.com',
+    accountType: 'seller',
+    sellerCode: 'sc',
+    sellerRole: 'influencer',
+    mode: 'selling',
+    ...overrides,
+  };
+}
 
 describe('canBook', () => {
-  it('returns false when bookerId === targetId (self-booking)', () => {
-    for (const role of roles) {
-      expect(canBook(role, role, 'uid-1', 'uid-1')).toBe(false);
-    }
-    expect(canBook('user', 'influencer', 'uid-1', 'uid-1')).toBe(false);
+  it('returns false when bookerId === providerId (self-booking)', () => {
+    const seller = sellerProfile({ id: 'uid-1' });
+    expect(canBook(seller, seller, 'uid-1', 'uid-1')).toBe(false);
+    const user = userProfile({ id: 'uid-1', canBuy: true });
+    expect(canBook(user, seller, 'uid-1', 'uid-1')).toBe(false);
   });
 
-  it('returns false when targetRole is "user" (nobody can book a user)', () => {
-    for (const bookerRole of roles) {
-      expect(canBook(bookerRole, 'user', 'uid-1', 'uid-2')).toBe(false);
-    }
+  it('returns false when booker or provider profile is null', () => {
+    const seller = sellerProfile({ id: 'uid-2' });
+    const user = userProfile({ id: 'uid-1', canBuy: true });
+    expect(canBook(null, seller, 'uid-1', 'uid-2')).toBe(false);
+    expect(canBook(user, null, 'uid-1', 'uid-2')).toBe(false);
   });
 
-  it('returns true when booker is "user" and target is any creative role', () => {
-    for (const targetRole of creativeRoles) {
-      expect(canBook('user', targetRole, 'uid-1', 'uid-2')).toBe(true);
-    }
+  it('returns false when provider is not a seller', () => {
+    const user = userProfile({ id: 'uid-1', canBuy: true });
+    const otherUser = userProfile({ id: 'uid-2' });
+    expect(canBook(user, otherUser, 'uid-1', 'uid-2')).toBe(false);
   });
 
-  it('returns true when both are creative roles (different ids)', () => {
-    for (const bookerRole of creativeRoles) {
-      for (const targetRole of creativeRoles) {
-        expect(canBook(bookerRole, targetRole, 'uid-1', 'uid-2')).toBe(true);
-      }
-    }
+  it('returns true when booker is user with canBuy and provider is seller', () => {
+    const user = userProfile({ id: 'uid-1', canBuy: true });
+    const seller = sellerProfile({ id: 'uid-2' });
+    expect(canBook(user, seller, 'uid-1', 'uid-2')).toBe(true);
   });
 
-  it('returns true when same creative role books another same role', () => {
-    expect(canBook('influencer', 'influencer', 'uid-1', 'uid-2')).toBe(true);
-    expect(canBook('videographer', 'videographer', 'uid-a', 'uid-b')).toBe(true);
+  it('returns false when booker is user without canBuy', () => {
+    const user = userProfile({ id: 'uid-1', canBuy: false });
+    const seller = sellerProfile({ id: 'uid-2' });
+    expect(canBook(user, seller, 'uid-1', 'uid-2')).toBe(false);
   });
 
-  it('returns false when user books user', () => {
-    expect(canBook('user', 'user', 'uid-1', 'uid-2')).toBe(false);
+  it('returns true when booker is seller in buying mode and provider is seller', () => {
+    const booker = sellerProfile({ id: 'uid-1', mode: 'buying' });
+    const provider = sellerProfile({ id: 'uid-2' });
+    expect(canBook(booker, provider, 'uid-1', 'uid-2')).toBe(true);
+  });
+
+  it('returns false when booker is seller in selling mode', () => {
+    const booker = sellerProfile({ id: 'uid-1', mode: 'selling' });
+    const provider = sellerProfile({ id: 'uid-2' });
+    expect(canBook(booker, provider, 'uid-1', 'uid-2')).toBe(false);
+  });
+
+  it('returns false when provider has no sellerRole (incomplete seller)', () => {
+    const user = userProfile({ id: 'uid-1', canBuy: true });
+    const incompleteSeller = sellerProfile({ id: 'uid-2', sellerRole: undefined });
+    expect(canBook(user, incompleteSeller, 'uid-1', 'uid-2')).toBe(false);
   });
 });

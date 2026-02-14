@@ -8,7 +8,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "deploy:firestore:indexes": "firebase deploy --only firestore:indexes"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.18",

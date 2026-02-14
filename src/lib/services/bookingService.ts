@@ -17,7 +17,8 @@ import {
 import { auth, db } from '../firebase/config.js';
 import { canBook } from '../utils/canBook.js';
 import type { Role } from '../types/role.js';
-import type { Booking, BookingStatus } from '../types/booking.js';
+import type { UserProfile } from '../types/user.js';
+import type { Booking, BookingStatus, BookerRole } from '../types/booking.js';
 import {
   BookingNotAllowedError,
   PermissionDeniedError,
@@ -33,20 +34,28 @@ export interface GetBookingsOptions {
   startAfterDoc?: DocumentSnapshot;
 }
 
+function toBookerRole(profile: UserProfile): BookerRole {
+  if (profile.accountType === 'user') return 'user';
+  return (profile.sellerRole as BookerRole) ?? 'influencer';
+}
+
 export async function createBooking(
   bookerId: string,
-  bookerRole: Role,
+  bookerProfile: UserProfile,
   providerId: string,
-  providerRole: Role,
+  providerProfile: UserProfile,
   date: Date
 ): Promise<string> {
   const uid = auth.currentUser?.uid;
   if (!uid) throw new ValidationError('You must be signed in to create a booking.');
   if (bookerId !== uid) throw new PermissionDeniedError('Booker must be the current user.');
 
-  if (!canBook(bookerRole, providerRole, bookerId, providerId)) {
+  if (!canBook(bookerProfile, providerProfile, bookerId, providerId)) {
     throw new BookingNotAllowedError();
   }
+
+  const bookerRole = toBookerRole(bookerProfile);
+  const providerRole: Role = providerProfile.sellerRole ?? 'influencer';
 
   const docRef = await addDoc(collection(db, BOOKINGS_COLLECTION), {
     bookerId,
@@ -67,7 +76,7 @@ function snapshotToBooking(
   return {
     id,
     bookerId: data.bookerId as string,
-    bookerRole: data.bookerRole as Role,
+    bookerRole: data.bookerRole as BookerRole,
     providerId: data.providerId as string,
     providerRole: data.providerRole as Role,
     date: data.date as import('firebase/firestore').Timestamp,

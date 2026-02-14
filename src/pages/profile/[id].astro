@@ -1,19 +1,42 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import BookNowButton from '../../components/BookNowButton.astro';
 
 export const prerender = false;
 
 const { id } = Astro.params;
-if (!id) throw new Error('Profile id required');
+let profile: Awaited<ReturnType<typeof import('../../lib/services/authService').getProfileByUserCode>> = null;
+if (id) {
+  const { getProfileByUserCode, getProfileBySellerCode } = await import('../../lib/services/authService.js');
+  profile = await getProfileByUserCode(id);
+  if (!profile) {
+    const sellerProfile = await getProfileBySellerCode(id);
+    if (sellerProfile) {
+      return Astro.redirect(`/seller/${id}`);
+    }
+  }
+}
 ---
 
-<Layout title={`Profile – Creative Marketplace`}>
+<Layout title={profile ? `${profile.displayName ?? 'Profile'} – Creative Marketplace` : 'Profile – Creative Marketplace'}>
   <main class="min-h-screen p-6 max-w-lg mx-auto">
-    <a href="/" class="text-sm text-indigo-600 hover:underline mb-4 inline-block">← Home</a>
-    <h1 class="text-xl font-bold mb-4">Profile</h1>
-    <div class="border border-gray-200 rounded-lg p-4">
-      <BookNowButton profileId={id} />
-    </div>
+    <a href="/discover" class="text-sm text-indigo-600 hover:underline mb-4 inline-block">← Discover</a>
+    {profile ? (
+      <>
+        <h1 class="text-xl font-bold mb-4">Profile</h1>
+        <div class="border border-gray-200 rounded-lg p-4">
+          <p class="font-medium text-gray-900">{profile.displayName ?? 'User'}</p>
+          <p class="text-sm text-gray-500">{profile.accountType === 'seller' ? `Seller · ${profile.sellerRole ?? ''}` : 'User'}</p>
+          {profile.accountType === 'seller' && profile.sellerCode && (
+            <a href={`/seller/${profile.sellerCode}`} class="mt-2 inline-block text-sm text-indigo-600 hover:underline">View my seller profile</a>
+          )}
+        </div>
+      </>
+    ) : (
+      <>
+        <h1 class="text-xl font-bold mb-4">Profile not found</h1>
+        <p class="text-gray-600">This profile does not exist.</p>
+        <a href="/discover" class="mt-4 inline-block text-indigo-600 hover:underline">Browse discover</a>
+      </>
+    )}
   </main>
 </Layout>

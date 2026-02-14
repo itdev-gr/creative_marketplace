@@ -15,6 +15,7 @@ const { profileId } = Astro.props;
   import { subscribeAuth, getCurrentUser } from '../lib/firebase/authState';
   import { getProfile } from '../lib/services/authService';
   import { createBooking } from '../lib/services/bookingService';
+  import type { UserProfile } from '../lib/types/user';
 
   const mount = document.getElementById('book-now-mount');
   if (!mount) throw new Error('BookNowButton: mount not found');
@@ -22,7 +23,7 @@ const { profileId } = Astro.props;
   const profileId = mount.dataset.profileId ?? '';
 
   function render(
-    profile: { id: string; role: import('../lib/types/role').Role; displayName?: string } | null,
+    profile: UserProfile | null,
     currentUser: ReturnType<typeof getCurrentUser>,
     error: string | null,
     loading: boolean
@@ -47,17 +48,18 @@ const { profileId } = Astro.props;
 
     const info = document.createElement('p');
     info.className = 'text-sm text-gray-700 mb-2';
-    info.textContent = `${profile.displayName || 'User'} · ${profile.role}`;
+    const roleLabel = profile.sellerRole ? profile.sellerRole.charAt(0).toUpperCase() + profile.sellerRole.slice(1) : 'Seller';
+    info.textContent = `${profile.displayName || 'Seller'} · ${roleLabel}`;
     mount.appendChild(info);
 
     const showButton =
       currentUser?.profile &&
-      canBook(currentUser.profile.role, profile.role, currentUser.id, profile.id);
+      canBook(currentUser.profile, profile, currentUser.id, profile.id);
     if (!showButton) {
       const p = document.createElement('p');
       p.className = 'text-sm text-gray-500';
       p.innerHTML = currentUser
-        ? 'You cannot book this profile.'
+        ? 'You cannot book this profile. Switch to Buying mode or enable buyer in your profile.'
         : '<a href="/login" class="text-indigo-600 hover:underline">Sign in</a> to book.';
       mount.appendChild(p);
       return;
@@ -68,11 +70,11 @@ const { profileId } = Astro.props;
     btn.className =
       'rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2';
     btn.textContent = 'Book Now';
-    btn.addEventListener('click', () => openBookingModal(profile.role));
+    btn.addEventListener('click', () => openBookingModal(profile));
     mount.appendChild(btn);
   }
 
-  async function openBookingModal(profileRole: import('../lib/types/role').Role) {
+  async function openBookingModal(providerProfile: UserProfile) {
     const currentUser = getCurrentUser();
     if (!currentUser?.profile) return;
 
@@ -80,12 +82,7 @@ const { profileId } = Astro.props;
     if (!dateStr) return;
     const date = new Date(dateStr + 'T12:00:00');
     if (Number.isNaN(date.getTime())) {
-      render(
-        { id: profileId, role: profileRole },
-        currentUser,
-        'Invalid date.',
-        false
-      );
+      render(providerProfile, currentUser, 'Invalid date.', false);
       return;
     }
 
@@ -97,9 +94,9 @@ const { profileId } = Astro.props;
     try {
       await createBooking(
         currentUser.id,
-        currentUser.profile.role,
-        profileId,
-        profileRole,
+        currentUser.profile,
+        providerProfile.id,
+        providerProfile,
         date
       );
       container.textContent = 'Booking requested.';
@@ -112,7 +109,7 @@ const { profileId } = Astro.props;
     }
   }
 
-  let profile: Awaited<ReturnType<typeof getProfile>> = null;
+  let profile: UserProfile | null = null;
   let currentUser: ReturnType<typeof getCurrentUser> = null;
   let error: string | null = null;
 

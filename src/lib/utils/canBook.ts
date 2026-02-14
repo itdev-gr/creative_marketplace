@@ -1,22 +1,29 @@
-import type { Role } from '../types/role.js';
+import type { UserProfile } from '../types/user.js';
 
 /**
- * Determines if a user (booker) can book another user (target/provider).
- * Rules:
- * - Cannot book yourself (bookerId === targetId → false)
- * - Cannot book a "user" role (targetRole === "user" → false)
- * - "user" can book any creative role (influencer, videographer, editor, model)
- * - Creative roles can book any other creative role (including same role)
+ * Determines if the current user (booker) can book the provider.
+ * - Booker can book if: (user with canBuy === true) OR (seller with mode === 'buying').
+ * - Provider must be a seller (accountType === 'seller' with sellerRole).
+ * - No self-booking.
  */
 export function canBook(
-  bookerRole: Role,
-  targetRole: Role,
+  bookerProfile: UserProfile | null,
+  providerProfile: UserProfile | null,
   bookerId: string,
-  targetId: string
+  providerId: string
 ): boolean {
-  if (bookerId === targetId) return false;
-  if (targetRole === 'user') return false;
-  if (bookerRole === 'user' && targetRole !== 'user') return true;
-  if (bookerRole !== 'user' && targetRole !== 'user') return true;
-  return false;
+  if (bookerId === providerId) return false;
+  if (!bookerProfile || !providerProfile) return false;
+
+  const providerIsSeller =
+    providerProfile.accountType === 'seller' &&
+    providerProfile.sellerCode != null &&
+    providerProfile.sellerRole != null;
+  if (!providerIsSeller) return false;
+
+  const bookerCanActAsBuyer =
+    (bookerProfile.accountType === 'user' && bookerProfile.canBuy === true) ||
+    (bookerProfile.accountType === 'seller' && bookerProfile.mode === 'buying');
+
+  return bookerCanActAsBuyer;
 }

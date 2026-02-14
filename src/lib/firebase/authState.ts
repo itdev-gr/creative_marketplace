@@ -10,6 +10,7 @@ export interface AuthStateUser {
 }
 
 let cachedUser: AuthStateUser | null = null;
+let authReady = false;
 const listeners = new Set<(user: AuthStateUser | null) => void>();
 
 function notifyListeners() {
@@ -18,7 +19,7 @@ function notifyListeners() {
 
 export function subscribeAuth(callback: (user: AuthStateUser | null) => void): () => void {
   listeners.add(callback);
-  if (cachedUser !== undefined) callback(cachedUser);
+  if (authReady) callback(cachedUser);
   return () => listeners.delete(callback);
 }
 
@@ -30,15 +31,22 @@ if (typeof window !== 'undefined') {
   onAuthStateChanged(auth, async (firebaseUser) => {
     if (!firebaseUser) {
       cachedUser = null;
+      authReady = true;
       notifyListeners();
       return;
     }
-    const profile = await getCurrentUserProfile(firebaseUser.uid);
+    let profile: UserProfile | null = null;
+    try {
+      profile = await getCurrentUserProfile(firebaseUser.uid);
+    } catch {
+      // Still treat as logged-in; profile may load later or fail due to permissions
+    }
     cachedUser = {
       id: firebaseUser.uid,
       email: firebaseUser.email ?? null,
       profile,
     };
+    authReady = true;
     notifyListeners();
   });
 }

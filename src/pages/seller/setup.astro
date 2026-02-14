@@ -1,0 +1,108 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { SELLER_ROLES } from '../../lib/types/role';
+---
+
+<Layout title="Seller setup – Creative Marketplace">
+  <main class="min-h-screen flex items-center justify-center p-6">
+    <div class="w-full max-w-sm space-y-6">
+      <h1 class="text-2xl font-bold text-center">Set up your seller profile</h1>
+      <p class="text-sm text-gray-600 text-center">Choose the service you offer. You can change this later.</p>
+      <form id="seller-setup-form" class="space-y-4">
+        <div>
+          <label for="seller-role" class="block text-sm font-medium text-gray-700">I offer</label>
+          <select
+            id="seller-role"
+            name="sellerRole"
+            required
+            class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+          >
+            {SELLER_ROLES.map((role) => (
+              <option value={role}>{role.charAt(0).toUpperCase() + role.slice(1)}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label for="seller-bio" class="block text-sm font-medium text-gray-700">Short bio (optional)</label>
+          <textarea
+            id="seller-bio"
+            name="bio"
+            rows={3}
+            class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            placeholder="Describe your service..."
+          />
+        </div>
+        <div id="seller-setup-error" class="hidden text-sm text-red-600" role="alert"></div>
+        <button
+          type="submit"
+          id="seller-setup-submit"
+          class="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 disabled:opacity-50"
+        >
+          Continue
+        </button>
+      </form>
+    </div>
+  </main>
+  <script>
+    import { subscribeAuth, getCurrentUser } from '../../lib/firebase/authState';
+    import { getCurrentUserProfile, updateSellerProfile } from '../../lib/services/authService';
+    import { isRole } from '../../lib/types/role';
+
+    const form = document.getElementById('seller-setup-form') as HTMLFormElement;
+    const errorEl = document.getElementById('seller-setup-error') as HTMLDivElement;
+    const submitBtn = document.getElementById('seller-setup-submit') as HTMLButtonElement;
+
+    function redirectIfNotSeller() {
+      const user = getCurrentUser();
+      if (!user) {
+        window.location.href = '/login';
+        return false;
+      }
+      if (user.profile?.accountType !== 'seller') {
+        window.location.href = '/discover';
+        return false;
+      }
+      return true;
+    }
+
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!redirectIfNotSeller()) return;
+      errorEl.classList.add('hidden');
+      errorEl.textContent = '';
+      submitBtn.disabled = true;
+      const sellerRoleRaw = (form.querySelector('[name="sellerRole"]') as HTMLSelectElement).value;
+      const bio = (form.querySelector('[name="bio"]') as HTMLTextAreaElement).value.trim() || undefined;
+      if (!isRole(sellerRoleRaw)) {
+        errorEl.textContent = 'Please choose a valid service type.';
+        errorEl.classList.remove('hidden');
+        submitBtn.disabled = false;
+        return;
+      }
+      const uid = getCurrentUser()?.id;
+      if (!uid) {
+        window.location.href = '/login';
+        return;
+      }
+      try {
+        await updateSellerProfile(uid, {
+          sellerRole: sellerRoleRaw,
+          ...(bio ? { sellerProfile: { bio } } : {}),
+        });
+        await new Promise((r) => setTimeout(r, 400));
+        window.location.href = '/discover';
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Update failed.';
+        errorEl.textContent = msg;
+        errorEl.classList.remove('hidden');
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    subscribeAuth(() => {
+      if (!redirectIfNotSeller()) return;
+    });
+    if (!redirectIfNotSeller()) void 0;
+  </script>
+</Layout>

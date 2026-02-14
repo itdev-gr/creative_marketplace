@@ -1,6 +1,9 @@
 import type { Timestamp } from 'firebase/firestore';
 import type { Role } from './role.js';
 
+/** For booking docs: booker is either a 'user' (canBuy) or a seller in buying mode (we store their sellerRole). */
+export type BookerRole = 'user' | Role;
+
 export type BookingStatus =
   | 'pending'
   | 'accepted'
@@ -11,7 +14,7 @@ export type BookingStatus =
 export interface Booking {
   id: string;
   bookerId: string;
-  bookerRole: Role;
+  bookerRole: BookerRole;
   providerId: string;
   providerRole: Role;
   date: Timestamp;

@@ -1,0 +1,95 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="My Profile – Creative Marketplace">
+  <main class="min-h-screen p-6 max-w-lg mx-auto">
+    <a href="/discover" class="text-sm text-indigo-600 hover:underline mb-4 inline-block">← Discover</a>
+    <h1 class="text-xl font-bold mb-4">My Profile</h1>
+    <div id="profile-me-mount" class="border border-gray-200 rounded-lg p-4">
+      <p class="text-slate-500">Loading…</p>
+    </div>
+  </main>
+  <script>
+    import { subscribeAuth, getCurrentUser } from '../../lib/firebase/authState';
+    import { signOut } from '../../lib/services/authService';
+    import { updateMode, updateCanBuy } from '../../lib/services/authService';
+
+    const mount = document.getElementById('profile-me-mount');
+
+    function render() {
+      if (!mount) return;
+      const user = getCurrentUser();
+      if (!user) {
+        window.location.href = '/login';
+        return;
+      }
+      const p = user.profile;
+      if (!p) {
+        if (mount) mount.innerHTML = '<p class="text-slate-500">Loading profile…</p>';
+        return;
+      }
+      let html = `
+        <p class="font-medium text-gray-900">${p.displayName ?? 'User'}</p>
+        <p class="text-sm text-gray-500">${p.email ?? ''}</p>
+        <p class="text-sm text-gray-500 mt-1">User code: <code class="bg-gray-100 px-1 rounded">${p.userCode}</code></p>
+      `;
+      if (p.accountType === 'user') {
+        if (p.canBuy) {
+          html += '<p class="mt-3 text-sm text-green-700">You can book creators.</p>';
+        } else {
+          html += `
+            <button type="button" id="btn-enable-buyer" class="mt-3 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500">
+              Make my profile as buyer
+            </button>
+          `;
+        }
+      } else {
+        html += `<p class="text-sm text-gray-500 mt-2">Seller code: <code class="bg-gray-100 px-1 rounded">${p.sellerCode ?? ''}</code></p>`;
+        html += `
+          <div class="mt-3 flex items-center gap-2">
+            <span class="text-sm font-medium">Mode:</span>
+            <button type="button" id="toggle-mode" class="rounded-md border border-gray-300 px-3 py-1 text-sm bg-white hover:bg-gray-50">
+              ${p.mode === 'buying' ? 'Buying' : 'Selling'}
+            </button>
+          </div>
+          <p class="text-sm text-gray-500 mt-1">Switch to ${p.mode === 'buying' ? 'Selling' : 'Buying'} to ${p.mode === 'buying' ? 'appear in discover and receive bookings' : 'book other creators'}.</p>
+          ${p.sellerCode ? `<a href="/seller/${p.sellerCode}" class="mt-2 inline-block text-sm text-indigo-600 hover:underline">View my seller page</a>` : ''}
+        `;
+      }
+      html += '<p class="mt-4"><button type="button" id="btn-logout" class="text-sm text-gray-600 hover:underline">Logout</button></p>';
+      if (mount) mount.innerHTML = html;
+
+      document.getElementById('btn-logout')?.addEventListener('click', () => {
+        signOut().then(() => { window.location.href = '/'; });
+      });
+      document.getElementById('btn-enable-buyer')?.addEventListener('click', async () => {
+        const uid = getCurrentUser()?.id;
+        if (!uid) return;
+        try {
+          await updateCanBuy(uid, true);
+          window.location.reload();
+        } catch (e) {
+          console.error(e);
+        }
+      });
+      const toggleMode = document.getElementById('toggle-mode');
+      if (toggleMode) {
+        toggleMode.addEventListener('click', async () => {
+          const uid = getCurrentUser()?.id;
+          if (!uid || !p || p.accountType !== 'seller') return;
+          const next = p.mode === 'selling' ? 'buying' : 'selling';
+          try {
+            await updateMode(uid, next);
+            window.location.reload();
+          } catch (e) {
+            console.error(e);
+          }
+        });
+      }
+    }
+
+    subscribeAuth(() => render());
+    render();
+  </script>
+</Layout>

@@ -79,12 +79,11 @@ import Layout from '../layouts/Layout.astro';
 
   <script>
     import { subscribeAuth, getCurrentUser } from '../lib/firebase/authState';
-    import { signOut } from '../lib/services/authService';
+    import { signOut, updateMode } from '../lib/services/authService';
     import { getCreatorsByRole } from '../lib/services/creatorsService';
     import type { Role } from '../lib/types/role';
+    import { SELLER_ROLES } from '../lib/types/role';
     import type { CreatorCard } from '../lib/services/creatorsService';
-
-    const CREATIVE_ROLES: Role[] = ['influencer', 'videographer', 'editor', 'model'];
 
     function getInitials(displayName: string): string {
       return displayName
@@ -96,7 +95,7 @@ import Layout from '../layouts/Layout.astro';
       const initials = getInitials(creator.displayName);
       const roleLabel = creator.role.charAt(0).toUpperCase() + creator.role.slice(1);
       return `
-        <a href="/profile/${creator.id}" class="flex-shrink-0 w-64 rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm hover:shadow-md hover:border-slate-300 transition-all block">
+        <a href="/seller/${creator.sellerCode}" class="flex-shrink-0 w-64 rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm hover:shadow-md hover:border-slate-300 transition-all block">
           <div class="aspect-[4/3] bg-slate-100 flex items-center justify-center">
             <span class="text-3xl font-semibold text-slate-400">${initials}</span>
           </div>
@@ -155,19 +154,45 @@ import Layout from '../layouts/Layout.astro';
       }
     }
 
-    // Header nav: auth-aware
-    function renderHeaderNav(loggedIn: boolean) {
+    // Header nav: auth-aware; for sellers show mode toggle
+    function renderHeaderNav(user: ReturnType<typeof getCurrentUser>) {
       const nav = document.getElementById('discover-header-nav');
       if (!nav) return;
-      if (loggedIn) {
+      const loggedIn = !!user;
+      if (loggedIn && user) {
+        const isSeller = user.profile?.accountType === 'seller';
+        const mode = user.profile?.mode ?? 'selling';
+        let toggleHtml = '';
+        if (isSeller) {
+          toggleHtml = `
+            <span class="text-sm text-slate-500 mr-1">Mode:</span>
+            <button type="button" id="discover-mode-toggle" class="text-sm font-medium px-3 py-1.5 rounded-lg ${mode === 'buying' ? 'bg-violet-100 text-violet-800' : 'bg-slate-100 text-slate-700'}">
+              ${mode === 'buying' ? 'Buying' : 'Selling'}
+            </button>
+          `;
+        }
         nav.innerHTML = `
           <a href="/discover" class="text-sm font-medium text-slate-900 px-3 py-2 rounded-lg bg-slate-100">Discover</a>
+          <a href="/profile/me" class="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100">My Profile</a>
+          ${toggleHtml}
           <a href="/discover" class="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100">My Bookings</a>
           <button type="button" id="discover-logout" class="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100">Logout</button>
         `;
         document.getElementById('discover-logout')?.addEventListener('click', () => {
           signOut().then(() => { window.location.href = '/'; });
         });
+        const modeToggle = document.getElementById('discover-mode-toggle');
+        if (modeToggle && isSeller) {
+          modeToggle.addEventListener('click', async () => {
+            const next = mode === 'selling' ? 'buying' : 'selling';
+            try {
+              await updateMode(user.id, next);
+              window.location.reload();
+            } catch (e) {
+              console.error(e);
+            }
+          });
+        }
       } else {
         nav.innerHTML = `
           <a href="/login" class="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100">Sign in</a>
@@ -182,7 +207,7 @@ import Layout from '../layouts/Layout.astro';
     document.querySelectorAll('.discover-tab').forEach((btn) => {
       btn.addEventListener('click', () => {
         const role = (btn as HTMLElement).dataset.roleTab as Role;
-        if (!role || !CREATIVE_ROLES.includes(role)) return;
+        if (!role || !SELLER_ROLES.includes(role)) return;
         activeRole = role;
         setActiveTab(activeRole);
         if (getCurrentUser()) loadSection(activeRole);
@@ -191,13 +216,13 @@ import Layout from '../layouts/Layout.astro';
     });
 
     subscribeAuth((user) => {
-      renderHeaderNav(!!user);
+      renderHeaderNav(user);
       if (user) {
         loadSection(activeRole);
       } else {
         showSignInToSeeCreators();
       }
     });
-    renderHeaderNav(!!getCurrentUser());
+    renderHeaderNav(getCurrentUser());
   </script>
 </Layout>
