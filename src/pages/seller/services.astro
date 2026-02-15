@@ -63,7 +63,8 @@ import Layout from '../../layouts/Layout.astro';
         window.location.href = '/login';
         return false;
       }
-      if (user.profile?.accountType !== 'seller') {
+      if (user.profile === null) return true;
+      if (user.profile.accountType !== 'seller') {
         window.location.href = '/discover';
         return false;
       }
@@ -275,6 +276,11 @@ import Layout from '../../layouts/Layout.astro';
       if (!user?.id) {
         setNavChecking();
         if (mount) mount.innerHTML = '<p class="text-slate-500">Checking sign-in…</p>';
+        return;
+      }
+      if (user.profile === null) {
+        setNavChecking();
+        if (mount) mount.innerHTML = '<p class="text-slate-500">Loading profile…</p>';
         return;
       }
       renderHeader(user);
