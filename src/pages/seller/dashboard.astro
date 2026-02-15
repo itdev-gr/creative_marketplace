@@ -1,0 +1,232 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+export const prerender = false;
+---
+
+<Layout title="Seller dashboard – Creative Marketplace">
+  <div class="min-h-screen flex flex-col bg-slate-50">
+    <header class="border-b border-slate-200/80 bg-white/80 backdrop-blur-sm sticky top-0 z-20">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        <a href="/" class="text-lg font-semibold text-slate-800 tracking-tight hover:text-violet-600 transition-colors">
+          Creative Marketplace
+        </a>
+        <nav id="dashboard-header-nav" class="flex items-center gap-3">
+          <p class="text-sm text-slate-500">Loading…</p>
+        </nav>
+      </div>
+    </header>
+
+    <main class="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6">
+      <a href="/discover" class="text-sm text-indigo-600 hover:underline mb-4 inline-block">← Discover</a>
+      <h1 class="text-2xl font-bold text-slate-900 mb-6">Dashboard</h1>
+
+      <div id="dashboard-mount" class="space-y-8">
+        <p class="text-slate-500">Loading…</p>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    import { subscribeAuth, getCurrentUser, isAuthReady } from '../../lib/firebase/authState';
+    import { signOut } from '../../lib/services/authService';
+    import { getProfile } from '../../lib/services/authService';
+    import {
+      getBookingsForUserAsProvider,
+      acceptBooking,
+      rejectBooking,
+    } from '../../lib/services/bookingService';
+    const mount = document.getElementById('dashboard-mount');
+    const nav = document.getElementById('dashboard-header-nav');
+
+    function redirectIfNeeded() {
+      if (!isAuthReady()) return true;
+      const user = getCurrentUser();
+      if (!user) {
+        window.location.href = '/login';
+        return false;
+      }
+      if (user.profile?.accountType !== 'seller') {
+        window.location.href = '/discover';
+        return false;
+      }
+      return true;
+    }
+
+    function formatDate(ts: { toDate?: () => Date }): string {
+      if (!ts) return '—';
+      const d = ts.toDate ? ts.toDate() : new Date((ts as unknown as { seconds: number }).seconds * 1000);
+      return d.toLocaleDateString(undefined, { dateStyle: 'medium' });
+    }
+
+    function statusBadgeClass(status: string): string {
+      switch (status) {
+        case 'pending':
+          return 'bg-violet-100 text-violet-800';
+        case 'accepted':
+          return 'bg-green-100 text-green-800';
+        case 'rejected':
+        case 'cancelled':
+          return 'bg-slate-100 text-slate-600';
+        case 'completed':
+          return 'bg-emerald-100 text-emerald-800';
+        default:
+          return 'bg-slate-100 text-slate-600';
+      }
+    }
+
+    function statusLabel(status: string): string {
+      return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+
+    function renderHeader(user: NonNullable<ReturnType<typeof getCurrentUser>>) {
+      if (!nav) return;
+      const displayName = user.profile?.displayName ?? 'Seller';
+      const initials = displayName.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase() || '?';
+      nav.innerHTML = `
+        <a href="/discover" class="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100">Discover</a>
+        <a href="/seller/setup" class="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100">Seller profile</a>
+        <a href="/seller/dashboard" class="text-sm font-medium text-slate-900 px-3 py-2 rounded-lg bg-slate-100">Dashboard</a>
+        <a href="/profile/me" class="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100">My Profile</a>
+        <div id="dashboard-profile-wrap" class="relative">
+          <button type="button" id="dashboard-profile-trigger" class="flex items-center justify-center w-9 h-9 rounded-full bg-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-300 transition-colors" aria-label="Profile menu" aria-expanded="false" aria-haspopup="true">${initials}</button>
+          <div id="dashboard-profile-dropdown" class="absolute right-0 top-full mt-1.5 w-56 rounded-lg bg-slate-50 shadow-xl border border-slate-200 py-2 hidden z-30">
+            <div class="px-4 py-3 flex items-center gap-3">
+              <div class="flex-shrink-0 w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-sm font-semibold text-slate-700">${initials}</div>
+              <div class="min-w-0">
+                <p class="font-semibold text-slate-900 truncate">${displayName}</p>
+                <p class="text-xs text-slate-500">Selling</p>
+              </div>
+            </div>
+            <hr class="border-slate-200 my-2" />
+            <a href="/seller/dashboard" class="profile-menu-item flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900">
+              <svg class="w-4 h-4 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+              Dashboard
+            </a>
+            <a href="/profile/me" class="profile-menu-item flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900">
+              <svg class="w-4 h-4 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              Settings
+            </a>
+            <hr class="border-slate-200 my-2" />
+            <button type="button" id="dashboard-profile-logout" class="profile-menu-item w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900 text-left">
+              <svg class="w-4 h-4 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+              Logout
+            </button>
+          </div>
+        </div>
+      `;
+      const wrap = document.getElementById('dashboard-profile-wrap');
+      const trigger = document.getElementById('dashboard-profile-trigger');
+      const dropdown = document.getElementById('dashboard-profile-dropdown');
+      const open = () => { dropdown?.classList.remove('hidden'); trigger?.setAttribute('aria-expanded', 'true'); };
+      const close = () => { dropdown?.classList.add('hidden'); trigger?.setAttribute('aria-expanded', 'false'); };
+      const toggle = () => { if (dropdown?.classList.contains('hidden')) open(); else close(); };
+      trigger?.addEventListener('click', (e) => { e.stopPropagation(); toggle(); });
+      wrap?.addEventListener('mouseenter', open);
+      wrap?.addEventListener('mouseleave', close);
+      document.getElementById('dashboard-profile-logout')?.addEventListener('click', () => {
+        signOut().then(() => { window.location.href = '/'; });
+      });
+      document.addEventListener('click', (e) => {
+        if (wrap && !wrap.contains(e.target as Node)) close();
+      });
+    }
+
+    async function loadDashboard() {
+      if (!mount || !redirectIfNeeded()) return;
+      const user = getCurrentUser();
+      if (!user?.id) return;
+
+      mount.innerHTML = '<p class="text-slate-500">Loading bookings…</p>';
+      renderHeader(user);
+
+      try {
+        const { bookings } = await getBookingsForUserAsProvider(user.id, { limit: 100 });
+        const bookerProfiles = await Promise.all(
+          bookings.map((b) => getProfile(b.bookerId).then((p) => p?.displayName ?? 'Unknown'))
+        );
+        const bookerNames: Record<string, string> = {};
+        bookings.forEach((b, i) => { bookerNames[b.bookerId] = bookerProfiles[i]; });
+
+        const pending = bookings.filter((b) => b.status === 'pending');
+        let html = '';
+
+        html += '<section class="space-y-3"><h2 class="text-lg font-semibold text-slate-900">Booking requests</h2>';
+        if (pending.length === 0) {
+          html += '<p class="text-slate-500 py-4">No booking requests.</p>';
+        } else {
+          pending.forEach((b) => {
+            const name = bookerNames[b.bookerId] ?? 'Unknown';
+            const dateStr = formatDate(b.date);
+            html += `
+              <div class="border border-slate-200 rounded-lg bg-white p-4 flex flex-wrap items-center justify-between gap-3" data-booking-id="${b.id}">
+                <div>
+                  <p class="font-medium text-slate-900">From: ${name}</p>
+                  <p class="text-sm text-slate-500">Requested date: ${dateStr}</p>
+                </div>
+                <div class="flex gap-2">
+                  <button type="button" class="dashboard-accept rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-500" data-booking-id="${b.id}">Accept</button>
+                  <button type="button" class="dashboard-reject rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" data-booking-id="${b.id}">Reject</button>
+                </div>
+              </div>
+            `;
+          });
+        }
+        html += '</section>';
+
+        html += '<section class="space-y-3"><h2 class="text-lg font-semibold text-slate-900">All orders</h2>';
+        if (bookings.length === 0) {
+          html += '<p class="text-slate-500 py-4">No orders yet.</p>';
+        } else {
+          html += '<div class="overflow-x-auto"><table class="min-w-full divide-y divide-slate-200 border border-slate-200 rounded-lg bg-white"><thead><tr class="bg-slate-50"><th class="px-4 py-2 text-left text-xs font-semibold text-slate-600 uppercase">Date</th><th class="px-4 py-2 text-left text-xs font-semibold text-slate-600 uppercase">From</th><th class="px-4 py-2 text-left text-xs font-semibold text-slate-600 uppercase">Status</th></tr></thead><tbody>';
+          bookings.forEach((b) => {
+            const name = bookerNames[b.bookerId] ?? 'Unknown';
+            const dateStr = formatDate(b.date);
+            const badgeClass = statusBadgeClass(b.status);
+            html += `<tr class="border-t border-slate-100"><td class="px-4 py-3 text-sm text-slate-700">${dateStr}</td><td class="px-4 py-3 text-sm text-slate-900">${name}</td><td class="px-4 py-3"><span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeClass}">${statusLabel(b.status)}</span></td></tr>`;
+          });
+          html += '</tbody></table></div>';
+        }
+        html += '</section>';
+
+        mount.innerHTML = html;
+
+        mount.querySelectorAll('.dashboard-accept').forEach((btn) => {
+          btn.addEventListener('click', async () => {
+            const id = (btn as HTMLElement).dataset.bookingId;
+            if (!id) return;
+            (btn as HTMLButtonElement).disabled = true;
+            try {
+              await acceptBooking(id);
+              await loadDashboard();
+            } catch (e) {
+              console.error(e);
+            }
+          });
+        });
+        mount.querySelectorAll('.dashboard-reject').forEach((btn) => {
+          btn.addEventListener('click', async () => {
+            const id = (btn as HTMLElement).dataset.bookingId;
+            if (!id) return;
+            (btn as HTMLButtonElement).disabled = true;
+            try {
+              await rejectBooking(id);
+              await loadDashboard();
+            } catch (e) {
+              console.error(e);
+            }
+          });
+        });
+      } catch (err) {
+        console.error('[Dashboard]', err);
+        mount.innerHTML = '<p class="text-red-600">Failed to load bookings. Try again.</p>';
+      }
+    }
+
+    subscribeAuth(() => {
+      if (!redirectIfNeeded()) return;
+      loadDashboard();
+    });
+    if (redirectIfNeeded()) loadDashboard();
+  </script>
+</Layout>

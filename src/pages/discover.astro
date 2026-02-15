@@ -140,7 +140,7 @@ import Layout from '../layouts/Layout.astro';
     function redirectIfSellerInSellingMode(user: ReturnType<typeof getCurrentUser>) {
       if (!user?.profile) return;
       if (user.profile.accountType === 'seller' && user.profile.mode === 'selling') {
-        window.location.href = '/seller/setup';
+        window.location.href = '/seller/dashboard';
       }
     }
 
@@ -187,7 +187,7 @@ import Layout from '../layouts/Layout.astro';
           <a href="/discover" class="text-sm font-medium text-slate-900 px-3 py-2 rounded-lg bg-slate-100">Discover</a>
           <a href="/profile/me" class="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100">My Profile</a>
           ${toggleHtml}
-          <a href="/discover" class="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100">My Bookings</a>
+          <a href="/seller/dashboard" class="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100">My Bookings</a>
           <div id="profile-menu-wrap" class="relative">
             <button type="button" id="profile-menu-trigger" class="flex items-center justify-center w-9 h-9 rounded-full bg-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-300 transition-colors" aria-label="Profile menu" aria-expanded="false" aria-haspopup="true">
               ${initials}
@@ -201,7 +201,7 @@ import Layout from '../layouts/Layout.astro';
                 </div>
               </div>
               <hr class="border-slate-200 my-2" />
-              <a href="/discover" class="profile-menu-item flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900">
+              <a href="${isSeller ? '/seller/dashboard' : '/discover'}" class="profile-menu-item flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900">
                 <svg class="w-4 h-4 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
                 Dashboard
               </a>
