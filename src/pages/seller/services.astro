@@ -19,8 +19,8 @@ import Layout from '../../layouts/Layout.astro';
       <h1 class="text-2xl font-bold text-slate-900 mb-6">My Services</h1>
       <p class="text-sm text-slate-600 mb-6">Set up a profile per service type and add listings. Only complete profiles are visible on Discover.</p>
 
-      <div id="services-mount" class="space-y-8">
-        <p class="text-slate-500">Loading…</p>
+      <div id="services-mount" class="grid grid-cols-2 gap-8">
+        <p class="text-slate-500 col-span-2">Loading…</p>
       </div>
     </main>
   </div>
@@ -121,7 +121,7 @@ import Layout from '../../layouts/Layout.astro';
       const user = getCurrentUser();
       if (!user?.id) return;
 
-      mount.innerHTML = '<p class="text-slate-500">Loading…</p>';
+      mount.innerHTML = '<p class="text-slate-500 col-span-2">Loading…</p>';
       renderHeader(user);
 
       try {
@@ -266,7 +266,7 @@ import Layout from '../../layouts/Layout.astro';
         });
       } catch (err) {
         console.error('[My Services]', err);
-        mount.innerHTML = '<p class="text-red-600">Failed to load services.</p>';
+        mount.innerHTML = '<p class="text-red-600 col-span-2">Failed to load services.</p>';
       }
     }
 
@@ -275,12 +275,12 @@ import Layout from '../../layouts/Layout.astro';
       const user = getCurrentUser();
       if (!user?.id) {
         setNavChecking();
-        if (mount) mount.innerHTML = '<p class="text-slate-500">Checking sign-in…</p>';
+        if (mount) mount.innerHTML = '<p class="text-slate-500 col-span-2">Checking sign-in…</p>';
         return;
       }
       if (user.profile === null) {
         setNavChecking();
-        if (mount) mount.innerHTML = '<p class="text-slate-500">Loading profile…</p>';
+        if (mount) mount.innerHTML = '<p class="text-slate-500 col-span-2">Loading profile…</p>';
         return;
       }
       renderHeader(user);
@@ -297,20 +297,20 @@ import Layout from '../../layouts/Layout.astro';
         const isSeller = user?.id && user.profile?.accountType === 'seller';
         if (!isAuthReady() || !isSeller) {
           setNavChecking();
-          if (mount) mount.innerHTML = '<p class="text-slate-500">Checking sign-in…</p>';
+          if (mount) mount.innerHTML = '<p class="text-slate-500 col-span-2">Checking sign-in…</p>';
         }
         updateUIIfNeeded();
       } catch (err) {
         console.error('[My Services] init', err);
         setNavSignIn();
-        if (mount) mount.innerHTML = '<p class="text-red-600">Something went wrong. <a href="/seller/services" class="text-violet-600 hover:underline">Refresh the page</a>.</p>';
+        if (mount) mount.innerHTML = '<p class="text-red-600 col-span-2">Something went wrong. <a href="/seller/services" class="text-violet-600 hover:underline">Refresh the page</a>.</p>';
       }
 
       setTimeout(() => {
         if (!mount || getCurrentUser()) return;
         const txt = mount.textContent ?? '';
         if (txt.includes('Checking sign-in') || (txt.includes('Loading') && !nav?.textContent?.includes('Dashboard'))) {
-          mount.innerHTML = '<p class="text-slate-500">Taking longer than usual. <a href="/login" class="text-violet-600 hover:underline">Sign in</a> or refresh the page.</p>';
+          mount.innerHTML = '<p class="text-slate-500 col-span-2">Taking longer than usual. <a href="/login" class="text-violet-600 hover:underline">Sign in</a> or refresh the page.</p>';
         }
       }, 5000);
     }
