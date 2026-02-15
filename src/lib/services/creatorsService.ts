@@ -1,10 +1,9 @@
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '../firebase/config.js';
 import type { Role } from '../types/role.js';
-import { isRole } from '../types/role.js';
+import { SELLER_ROLES } from '../types/role.js';
 
-const USERS_COLLECTION = 'users';
-const SELLER_ROLES: Role[] = ['influencer', 'videographer', 'editor', 'model'];
+const SERVICE_PROFILES_COLLECTION = 'serviceProfiles';
 const DEFAULT_LIMIT = 20;
 
 export interface CreatorCard {
@@ -15,26 +14,27 @@ export interface CreatorCard {
 }
 
 function docToCreatorCard(id: string, data: Record<string, unknown>): CreatorCard | null {
-  if (data?.accountType !== 'seller') return null;
+  const sellerId = data?.sellerId as string | undefined;
   const sellerCode = data?.sellerCode as string | undefined;
-  const role = data?.sellerRole;
-  if (!sellerCode || !role || !isRole(role) || !SELLER_ROLES.includes(role)) return null;
+  const role = data?.role as Role | undefined;
+  if (!sellerId || !sellerCode || !role || !SELLER_ROLES.includes(role)) return null;
   return {
-    id,
+    id: sellerId,
     sellerCode,
     displayName: (data?.displayName as string) ?? 'Creator',
     role,
   };
 }
 
+/** Returns creators (sellers) that have a complete service profile for the given role. */
 export async function getCreatorsByRole(role: Role, options?: { limit?: number }): Promise<CreatorCard[]> {
   const limitN = options?.limit ?? DEFAULT_LIMIT;
   if (!SELLER_ROLES.includes(role)) return [];
 
   const q = query(
-    collection(db, USERS_COLLECTION),
-    where('accountType', '==', 'seller'),
-    where('sellerRole', '==', role),
+    collection(db, SERVICE_PROFILES_COLLECTION),
+    where('role', '==', role),
+    where('isComplete', '==', true),
     orderBy('createdAt', 'desc'),
     limit(limitN)
   );
@@ -50,9 +50,8 @@ export async function getCreatorsByRole(role: Role, options?: { limit?: number }
 export async function getCreators(options?: { limit?: number }): Promise<CreatorCard[]> {
   const limitN = options?.limit ?? DEFAULT_LIMIT;
   const q = query(
-    collection(db, USERS_COLLECTION),
-    where('accountType', '==', 'seller'),
-    where('sellerRole', 'in', SELLER_ROLES),
+    collection(db, SERVICE_PROFILES_COLLECTION),
+    where('isComplete', '==', true),
     orderBy('createdAt', 'desc'),
     limit(limitN)
   );

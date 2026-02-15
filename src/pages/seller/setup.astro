@@ -3,14 +3,14 @@ import Layout from '../../layouts/Layout.astro';
 import { SELLER_ROLES } from '../../lib/types/role';
 ---
 
-<Layout title="Seller setup – Creative Marketplace">
+<Layout title="Setup service profile – Creative Marketplace">
   <main class="min-h-screen flex items-center justify-center p-6">
     <div class="w-full max-w-sm space-y-6">
-      <h1 class="text-2xl font-bold text-center">Set up your seller profile</h1>
-      <p class="text-sm text-gray-600 text-center">Choose the service you offer. You can change this later.</p>
+      <h1 class="text-2xl font-bold text-center">Setup service profile</h1>
+      <p class="text-sm text-gray-600 text-center">Add a profile for this service type. You'll appear on Discover once it's complete.</p>
       <form id="seller-setup-form" class="space-y-4">
-        <div>
-          <label for="seller-role" class="block text-sm font-medium text-gray-700">I offer</label>
+        <div id="seller-role-field">
+          <label for="seller-role" class="block text-sm font-medium text-gray-700">Service type</label>
           <select
             id="seller-role"
             name="sellerRole"
@@ -38,21 +38,28 @@ import { SELLER_ROLES } from '../../lib/types/role';
           id="seller-setup-submit"
           class="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 disabled:opacity-50"
         >
-          Continue
+          Save
         </button>
       </form>
     </div>
   </main>
   <script>
     import { subscribeAuth, getCurrentUser, isAuthReady } from '../../lib/firebase/authState';
-    import { updateSellerProfile } from '../../lib/services/authService';
+    import { createOrUpdateServiceProfile } from '../../lib/services/serviceProfilesService';
+    import { getServiceProfile } from '../../lib/services/serviceProfilesService';
     import { isRole } from '../../lib/types/role';
 
     const form = document.getElementById('seller-setup-form') as HTMLFormElement;
     const errorEl = document.getElementById('seller-setup-error') as HTMLDivElement;
     const submitBtn = document.getElementById('seller-setup-submit') as HTMLButtonElement;
+    const roleSelect = form?.querySelector('[name="sellerRole"]') as HTMLSelectElement | null;
 
-    function redirectIfNotSeller() {
+    function getRoleFromUrl(): string | null {
+      const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      return params?.get('role') ?? null;
+    }
+
+    function redirectIfNotSeller(): boolean {
       if (!isAuthReady()) return true;
       const user = getCurrentUser();
       if (!user) {
@@ -67,15 +74,24 @@ import { SELLER_ROLES } from '../../lib/types/role';
       return true;
     }
 
+    function applyRoleFromUrl() {
+      const role = getRoleFromUrl();
+      if (role && isRole(role) && roleSelect) {
+        roleSelect.value = role;
+        roleSelect.disabled = true;
+      }
+    }
+
     form?.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!redirectIfNotSeller()) return;
       errorEl.classList.add('hidden');
       errorEl.textContent = '';
       submitBtn.disabled = true;
-      const sellerRoleRaw = (form.querySelector('[name="sellerRole"]') as HTMLSelectElement).value;
+      const roleFromUrl = getRoleFromUrl();
+      const roleRaw = roleFromUrl && isRole(roleFromUrl) ? roleFromUrl : (roleSelect?.value ?? '');
       const bio = (form.querySelector('[name="bio"]') as HTMLTextAreaElement).value.trim() || undefined;
-      if (!isRole(sellerRoleRaw)) {
+      if (!isRole(roleRaw)) {
         errorEl.textContent = 'Please choose a valid service type.';
         errorEl.classList.remove('hidden');
         submitBtn.disabled = false;
@@ -88,12 +104,9 @@ import { SELLER_ROLES } from '../../lib/types/role';
         return;
       }
       try {
-        await updateSellerProfile(uid, {
-          sellerRole: sellerRoleRaw,
-          ...(bio ? { sellerProfile: { bio } } : {}),
-        });
+        await createOrUpdateServiceProfile(uid, roleRaw, { bio });
         await new Promise((r) => setTimeout(r, 400));
-        window.location.href = '/discover';
+        window.location.href = '/seller/services';
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Update failed.';
         errorEl.textContent = msg;
@@ -103,21 +116,32 @@ import { SELLER_ROLES } from '../../lib/types/role';
       }
     });
 
-    function prefillForm() {
+    async function prefillForm() {
       const user = getCurrentUser();
-      const p = user?.profile;
-      if (!p || p.accountType !== 'seller') return;
-      const roleSelect = form?.querySelector('[name="sellerRole"]') as HTMLSelectElement | null;
+      if (!user?.id || user.profile?.accountType !== 'seller') return;
+      const role = getRoleFromUrl() ?? roleSelect?.value;
+      if (!role || !isRole(role)) return;
+      const existing = await getServiceProfile(user.id, role);
       const bioInput = form?.querySelector('[name="bio"]') as HTMLTextAreaElement | null;
-      if (roleSelect && p.sellerRole) roleSelect.value = p.sellerRole;
-      if (bioInput && p.sellerProfile?.bio) bioInput.value = p.sellerProfile.bio;
+      if (bioInput && existing?.bio) bioInput.value = existing.bio;
+    }
+
+    function init() {
+      if (!redirectIfNotSeller()) return;
+      const role = getRoleFromUrl();
+      if (!role && typeof window !== 'undefined') {
+        window.location.href = '/seller/services';
+        return;
+      }
+      applyRoleFromUrl();
+      prefillForm();
     }
 
     subscribeAuth(() => {
       if (!redirectIfNotSeller()) return;
+      applyRoleFromUrl();
       prefillForm();
     });
-    if (!redirectIfNotSeller()) void 0;
-    if (redirectIfNotSeller()) prefillForm();
+    init();
   </script>
 </Layout>

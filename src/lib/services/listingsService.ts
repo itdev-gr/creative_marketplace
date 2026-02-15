@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { auth, db } from '../firebase/config.js';
 import type { Listing } from '../types/listing.js';
+import type { Role } from '../types/role.js';
 
 const LISTINGS_COLLECTION = 'listings';
 
@@ -22,11 +23,22 @@ function snapshotToListing(id: string, data: Record<string, unknown>): Listing {
     sellerId: data.sellerId as string,
     title: (data.title as string) ?? '',
     description: data.description as string | undefined,
+    role: data.role as Listing['role'],
     createdAt: data.createdAt as import('firebase/firestore').Timestamp,
   };
 }
 
-export async function getListingsBySeller(sellerId: string): Promise<Listing[]> {
+export async function getListingsBySeller(sellerId: string, role?: Role): Promise<Listing[]> {
+  if (role) {
+    const q = query(
+      collection(db, LISTINGS_COLLECTION),
+      where('sellerId', '==', sellerId),
+      where('role', '==', role),
+      orderBy('createdAt', 'desc')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d) => snapshotToListing(d.id, d.data()));
+  }
   const q = query(
     collection(db, LISTINGS_COLLECTION),
     where('sellerId', '==', sellerId),
@@ -38,17 +50,20 @@ export async function getListingsBySeller(sellerId: string): Promise<Listing[]> 
 
 export async function createListing(
   sellerId: string,
-  data: { title: string; description?: string }
+  data: { title: string; description?: string; role?: Role }
 ): Promise<string> {
   const uid = auth.currentUser?.uid;
   if (!uid || uid !== sellerId) throw new Error('Unauthorized');
 
-  const ref = await addDoc(collection(db, LISTINGS_COLLECTION), {
+  const payload: Record<string, unknown> = {
     sellerId,
     title: data.title.trim(),
     description: data.description?.trim() || null,
     createdAt: serverTimestamp(),
-  });
+  };
+  if (data.role) payload.role = data.role;
+
+  const ref = await addDoc(collection(db, LISTINGS_COLLECTION), payload);
   return ref.id;
 }
 

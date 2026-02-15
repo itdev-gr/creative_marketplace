@@ -165,7 +165,7 @@ import Layout from '../layouts/Layout.astro';
       featuredEl.innerHTML = '<div class="flex gap-4 min-w-max"><p class="text-slate-500 py-8">Loading…</p></div>';
       try {
         const creators = await getCreatorsByRole(role, { limit: 20 });
-        const listingsPerCreator = await Promise.all(creators.map((c) => getListingsBySeller(c.id)));
+        const listingsPerCreator = await Promise.all(creators.map((c) => getListingsBySeller(c.id, role)));
         const listingCards: ListingCard[] = [];
         creators.forEach((creator, i) => {
           const list = listingsPerCreator[i] ?? [];

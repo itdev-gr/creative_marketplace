@@ -96,7 +96,7 @@ import Layout from '../layouts/Layout.astro';
         await signUp(email, password, accountType, displayName);
         await new Promise((r) => setTimeout(r, 400));
         if (accountType === 'seller') {
-          window.location.href = '/seller/setup';
+          window.location.href = '/seller/services';
         } else {
           window.location.href = '/discover';
         }
