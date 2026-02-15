@@ -1,6 +1,5 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { SELLER_ROLES } from '../../lib/types/role';
 ---
 
 <Layout title="My Services – Creative Marketplace">
@@ -26,7 +25,7 @@ import { SELLER_ROLES } from '../../lib/types/role';
     </main>
   </div>
 
-  <script lang="ts" type="module" define:vars={{ sellerRoles: SELLER_ROLES }}>
+  <script lang="ts">
     import { subscribeAuth, getCurrentUser, isAuthReady } from '../../lib/firebase/authState';
     import { signOut } from '../../lib/services/authService';
     import {
@@ -36,12 +35,13 @@ import { SELLER_ROLES } from '../../lib/types/role';
       deleteListing,
     } from '../../lib/services/listingsService';
     import { getServiceProfilesBySeller } from '../../lib/services/serviceProfilesService';
+    import { SELLER_ROLES } from '../../lib/types/role';
     import type { Role } from '../../lib/types/role';
     import type { Listing } from '../../lib/types/listing';
 
     const mount = document.getElementById('services-mount');
     const nav = document.getElementById('services-header-nav');
-    const ROLES: Role[] = Array.isArray(sellerRoles) ? sellerRoles : ['influencer', 'videographer', 'editor', 'model'];
+    const ROLES: Role[] = SELLER_ROLES;
 
     function roleLabel(role: string): string {
       return role.charAt(0).toUpperCase() + role.slice(1);
