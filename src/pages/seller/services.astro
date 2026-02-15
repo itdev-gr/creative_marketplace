@@ -26,7 +26,7 @@ import { SELLER_ROLES } from '../../lib/types/role';
     </main>
   </div>
 
-  <script lang="ts" define:vars={{ sellerRoles: SELLER_ROLES }}>
+  <script lang="ts" type="module" define:vars={{ sellerRoles: SELLER_ROLES }}>
     import { subscribeAuth, getCurrentUser, isAuthReady } from '../../lib/firebase/authState';
     import { signOut } from '../../lib/services/authService';
     import {
