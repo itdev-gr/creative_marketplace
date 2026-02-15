@@ -82,38 +82,51 @@ import Layout from '../layouts/Layout.astro';
     import { subscribeAuth, getCurrentUser } from '../lib/firebase/authState';
     import { signOut, updateMode } from '../lib/services/authService';
     import { getCreatorsByRole } from '../lib/services/creatorsService';
+    import { getListingsBySeller } from '../lib/services/listingsService';
     import type { Role } from '../lib/types/role';
     import { SELLER_ROLES } from '../lib/types/role';
-    import type { CreatorCard } from '../lib/services/creatorsService';
+    import type { Listing } from '../lib/types/listing';
 
-    function getInitials(displayName: string): string {
-      return displayName
-        ? displayName.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase() || '?'
-        : '?';
+    interface ListingCard {
+      listing: Listing;
+      sellerCode: string;
+      displayName: string;
     }
 
-    function renderCard(creator: CreatorCard): string {
-      const initials = getInitials(creator.displayName);
-      const roleLabel = creator.role.charAt(0).toUpperCase() + creator.role.slice(1);
+    function listingCreatedAt(listing: Listing): number {
+      const ts = listing.createdAt;
+      if (!ts) return 0;
+      if (typeof (ts as { toDate?: () => Date }).toDate === 'function') return (ts as { toDate: () => Date }).toDate().getTime();
+      if (typeof (ts as { seconds?: number }).seconds === 'number') return (ts as { seconds: number }).seconds * 1000;
+      return 0;
+    }
+
+    function truncateDesc(desc: string | undefined, maxLen: number): string {
+      if (!desc) return '';
+      return desc.length <= maxLen ? desc : desc.slice(0, maxLen) + '…';
+    }
+
+    function renderListingCard(item: ListingCard): string {
+      const titleEsc = item.listing.title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const descEsc = truncateDesc(item.listing.description, 100).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const nameEsc = item.displayName.replace(/</g, '&lt;').replace(/>/g, '&gt;');
       return `
-        <a href="/seller/${creator.sellerCode}" class="flex-shrink-0 w-64 rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm hover:shadow-md hover:border-slate-300 transition-all block">
-          <div class="aspect-[4/3] bg-slate-100 flex items-center justify-center">
-            <span class="text-3xl font-semibold text-slate-400">${initials}</span>
-          </div>
-          <div class="p-3">
-            <p class="font-medium text-slate-900 truncate">${creator.displayName}</p>
-            <p class="text-sm text-slate-500">${roleLabel}</p>
+        <a href="/seller/${item.sellerCode}" class="flex-shrink-0 w-64 rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm hover:shadow-md hover:border-slate-300 transition-all block">
+          <div class="p-4">
+            <p class="font-medium text-slate-900 truncate">${titleEsc}</p>
+            ${descEsc ? `<p class="text-sm text-slate-600 mt-1 line-clamp-2">${descEsc}</p>` : ''}
+            <p class="text-xs text-slate-500 mt-2">by ${nameEsc}</p>
           </div>
         </a>
       `;
     }
 
-    function renderCards(container: HTMLElement, creators: CreatorCard[]) {
-      if (creators.length === 0) {
-        container.innerHTML = '<p class="text-slate-500 py-8">No creators yet.</p>';
+    function renderListingCards(container: HTMLElement, items: ListingCard[]) {
+      if (items.length === 0) {
+        container.innerHTML = '<p class="text-slate-500 py-8">No services yet.</p>';
         return;
       }
-      container.innerHTML = `<div class="flex gap-4 min-w-max">${creators.map(renderCard).join('')}</div>`;
+      container.innerHTML = `<div class="flex gap-4 min-w-max">${items.map(renderListingCard).join('')}</div>`;
     }
 
     function setActiveTab(role: Role) {
@@ -151,14 +164,24 @@ import Layout from '../layouts/Layout.astro';
       popularEl.innerHTML = '<div class="flex gap-4 min-w-max"><p class="text-slate-500 py-8">Loading…</p></div>';
       featuredEl.innerHTML = '<div class="flex gap-4 min-w-max"><p class="text-slate-500 py-8">Loading…</p></div>';
       try {
-        const all = await getCreatorsByRole(role, { limit: 20 });
-        const mid = Math.ceil(all.length / 2);
-        renderCards(popularEl, all.slice(0, mid));
-        renderCards(featuredEl, all.slice(mid));
+        const creators = await getCreatorsByRole(role, { limit: 20 });
+        const listingsPerCreator = await Promise.all(creators.map((c) => getListingsBySeller(c.id)));
+        const listingCards: ListingCard[] = [];
+        creators.forEach((creator, i) => {
+          const list = listingsPerCreator[i] ?? [];
+          list.forEach((listing) => {
+            listingCards.push({ listing, sellerCode: creator.sellerCode, displayName: creator.displayName });
+          });
+        });
+        listingCards.sort((a, b) => listingCreatedAt(b.listing) - listingCreatedAt(a.listing));
+        const capped = listingCards.slice(0, 40);
+        const mid = Math.ceil(capped.length / 2);
+        renderListingCards(popularEl, capped.slice(0, mid));
+        renderListingCards(featuredEl, capped.slice(mid));
       } catch (err) {
         console.error('[Discover] loadSection failed', err);
-        renderCards(popularEl, []);
-        renderCards(featuredEl, []);
+        renderListingCards(popularEl, []);
+        renderListingCards(featuredEl, []);
       }
     }
 
@@ -224,8 +247,6 @@ import Layout from '../layouts/Layout.astro';
         const close = () => { dropdown?.classList.add('hidden'); trigger?.setAttribute('aria-expanded', 'false'); };
         const toggle = () => { if (dropdown?.classList.contains('hidden')) open(); else close(); };
         trigger?.addEventListener('click', (e) => { e.stopPropagation(); toggle(); });
-        wrap?.addEventListener('mouseenter', open);
-        wrap?.addEventListener('mouseleave', close);
         document.getElementById('profile-menu-logout')?.addEventListener('click', () => {
           signOut().then(() => { window.location.href = '/'; });
         });

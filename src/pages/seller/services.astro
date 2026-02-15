@@ -88,8 +88,6 @@ export const prerender = false;
       const close = () => { dropdown?.classList.add('hidden'); trigger?.setAttribute('aria-expanded', 'false'); };
       const toggle = () => { if (dropdown?.classList.contains('hidden')) open(); else close(); };
       trigger?.addEventListener('click', (e) => { e.stopPropagation(); toggle(); });
-      wrap?.addEventListener('mouseenter', open);
-      wrap?.addEventListener('mouseleave', close);
       document.getElementById('services-profile-logout')?.addEventListener('click', () => {
         signOut().then(() => { window.location.href = '/'; });
       });
