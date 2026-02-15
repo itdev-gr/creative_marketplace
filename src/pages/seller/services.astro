@@ -47,6 +47,14 @@ import { SELLER_ROLES } from '../../lib/types/role';
       return role.charAt(0).toUpperCase() + role.slice(1);
     }
 
+    function setNavChecking() {
+      if (nav) nav.innerHTML = '<p class="text-sm text-slate-500">Checking…</p>';
+    }
+
+    function setNavSignIn() {
+      if (nav) nav.innerHTML = '<a href="/login" class="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100">Sign in</a>';
+    }
+
     function redirectIfNeeded() {
       if (!isAuthReady()) return true;
       const user = getCurrentUser();
@@ -261,19 +269,33 @@ import { SELLER_ROLES } from '../../lib/types/role';
       }
     }
 
-    function runWhenReady() {
+    function updateUIIfNeeded() {
       if (!redirectIfNeeded()) return;
       const user = getCurrentUser();
       if (!user?.id) {
+        setNavChecking();
         if (mount) mount.innerHTML = '<p class="text-slate-500">Checking sign-in…</p>';
         return;
       }
+      renderHeader(user);
       loadAndRender();
     }
 
-    subscribeAuth(() => runWhenReady());
+    subscribeAuth(() => updateUIIfNeeded());
 
-    runWhenReady();
+    try {
+      const user = getCurrentUser();
+      const isSeller = user?.id && user.profile?.accountType === 'seller';
+      if (!isAuthReady() || !isSeller) {
+        setNavChecking();
+        if (mount) mount.innerHTML = '<p class="text-slate-500">Checking sign-in…</p>';
+      }
+      updateUIIfNeeded();
+    } catch (err) {
+      console.error('[My Services] init', err);
+      setNavSignIn();
+      if (mount) mount.innerHTML = '<p class="text-red-600">Something went wrong. <a href="/seller/services" class="text-violet-600 hover:underline">Refresh the page</a>.</p>';
+    }
 
     setTimeout(() => {
       if (!mount || getCurrentUser()) return;
