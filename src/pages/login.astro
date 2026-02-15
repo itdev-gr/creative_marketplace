@@ -46,10 +46,25 @@ import Layout from '../layouts/Layout.astro';
   </main>
   <script>
     import { signIn } from '../lib/services/authService';
+    import { subscribeAuth, getCurrentUser, isAuthReady } from '../lib/firebase/authState';
 
     const form = document.getElementById('login-form') as HTMLFormElement;
     const errorEl = document.getElementById('login-error') as HTMLDivElement;
     const submitBtn = document.getElementById('login-submit') as HTMLButtonElement;
+
+    function redirectIfLoggedIn() {
+      if (!isAuthReady()) return;
+      const user = getCurrentUser();
+      if (!user) return;
+      if (user.profile?.accountType === 'seller' && user.profile?.mode === 'selling') {
+        window.location.href = '/seller/dashboard';
+        return;
+      }
+      window.location.href = '/discover';
+    }
+
+    subscribeAuth(() => redirectIfLoggedIn());
+    redirectIfLoggedIn();
 
     form?.addEventListener('submit', async (e) => {
       e.preventDefault();
