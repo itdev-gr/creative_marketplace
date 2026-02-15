@@ -41,7 +41,7 @@ import { SELLER_ROLES } from '../../lib/types/role';
 
     const mount = document.getElementById('services-mount');
     const nav = document.getElementById('services-header-nav');
-    const ROLES = sellerRoles as Role[];
+    const ROLES: Role[] = Array.isArray(sellerRoles) ? sellerRoles : ['influencer', 'videographer', 'editor', 'model'];
 
     function roleLabel(role: string): string {
       return role.charAt(0).toUpperCase() + role.slice(1);
@@ -261,10 +261,26 @@ import { SELLER_ROLES } from '../../lib/types/role';
       }
     }
 
-    subscribeAuth(() => {
+    function runWhenReady() {
       if (!redirectIfNeeded()) return;
+      const user = getCurrentUser();
+      if (!user?.id) {
+        if (mount) mount.innerHTML = '<p class="text-slate-500">Checking sign-in…</p>';
+        return;
+      }
       loadAndRender();
-    });
-    if (redirectIfNeeded()) loadAndRender();
+    }
+
+    subscribeAuth(() => runWhenReady());
+
+    runWhenReady();
+
+    setTimeout(() => {
+      if (!mount || getCurrentUser()) return;
+      const txt = mount.textContent ?? '';
+      if (txt.includes('Checking sign-in') || (txt.includes('Loading') && !nav?.textContent?.includes('Dashboard'))) {
+        mount.innerHTML = '<p class="text-slate-500">Taking longer than usual. <a href="/login" class="text-violet-600 hover:underline">Sign in</a> or refresh the page.</p>';
+      }
+    }, 5000);
   </script>
 </Layout>
