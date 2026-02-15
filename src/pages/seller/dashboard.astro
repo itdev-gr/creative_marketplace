@@ -18,7 +18,7 @@ export const prerender = false;
     </header>
 
     <main class="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6">
-      <a href="/discover" class="text-sm text-indigo-600 hover:underline mb-4 inline-block">← Discover</a>
+      <a href="/" class="text-sm text-indigo-600 hover:underline mb-4 inline-block">← Back</a>
       <h1 class="text-2xl font-bold text-slate-900 mb-6">Dashboard</h1>
 
       <div id="dashboard-mount" class="space-y-8">
@@ -84,7 +84,6 @@ export const prerender = false;
       const displayName = user.profile?.displayName ?? 'Seller';
       const initials = displayName.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase() || '?';
       nav.innerHTML = `
-        <a href="/discover" class="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100">Discover</a>
         <a href="/seller/setup" class="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100">Seller profile</a>
         <a href="/seller/dashboard" class="text-sm font-medium text-slate-900 px-3 py-2 rounded-lg bg-slate-100">Dashboard</a>
         <a href="/profile/me" class="text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100">My Profile</a>
