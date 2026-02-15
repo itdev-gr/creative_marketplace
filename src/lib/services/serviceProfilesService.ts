@@ -20,7 +20,11 @@ const SERVICE_PROFILES_COLLECTION = 'serviceProfiles';
 export interface ServiceProfile {
   sellerId: string;
   role: Role;
+  title: string | null;
   bio: string | null;
+  portfolioUrls: string[];
+  charge: string | null;
+  equipment: string | null;
   isComplete: boolean;
   displayName: string;
   sellerCode: string;
@@ -32,10 +36,15 @@ function docId(sellerId: string, role: Role): string {
 }
 
 function snapshotToServiceProfile(data: Record<string, unknown>): ServiceProfile {
+  const portfolio = data.portfolioUrls as string[] | undefined;
   return {
     sellerId: data.sellerId as string,
     role: data.role as Role,
+    title: (data.title as string) ?? null,
     bio: (data.bio as string) ?? null,
+    portfolioUrls: Array.isArray(portfolio) ? portfolio.slice(0, 4) : [],
+    charge: (data.charge as string) ?? null,
+    equipment: (data.equipment as string) ?? null,
     isComplete: (data.isComplete as boolean) ?? false,
     displayName: (data.displayName as string) ?? '',
     sellerCode: (data.sellerCode as string) ?? '',
@@ -61,10 +70,18 @@ export async function getServiceProfilesBySeller(sellerId: string): Promise<Serv
   return snapshot.docs.map((d) => snapshotToServiceProfile(d.data()));
 }
 
+export type ServiceProfileUpdateData = {
+  bio?: string;
+  title?: string;
+  portfolioUrls?: string[];
+  charge?: string;
+  equipment?: string;
+};
+
 export async function createOrUpdateServiceProfile(
   sellerId: string,
   role: Role,
-  data: { bio?: string }
+  data: ServiceProfileUpdateData
 ): Promise<void> {
   const uid = auth.currentUser?.uid;
   if (!uid || uid !== sellerId) throw new Error('Unauthorized');
@@ -79,25 +96,32 @@ export async function createOrUpdateServiceProfile(
   const snap = await getDoc(ref);
   const now = serverTimestamp();
 
+  const portfolioUrls = data.portfolioUrls && data.portfolioUrls.length > 0
+    ? data.portfolioUrls.slice(0, 4)
+    : (snap.exists() ? (snap.data()?.portfolioUrls as string[] | undefined) ?? [] : []);
+
+  const payload = {
+    sellerId,
+    role,
+    title: data.title?.trim() ?? null,
+    bio: data.bio?.trim() ?? null,
+    portfolioUrls,
+    charge: data.charge?.trim() ?? null,
+    equipment: data.equipment?.trim() ?? null,
+    isComplete: true,
+    displayName,
+    sellerCode,
+  };
+
   if (snap.exists()) {
     await setDoc(ref, {
-      sellerId,
-      role,
-      bio: data.bio?.trim() ?? null,
-      isComplete: true,
-      displayName,
-      sellerCode,
+      ...payload,
       updatedAt: now,
       createdAt: snap.data()?.createdAt ?? now,
     }, { merge: true });
   } else {
     await setDoc(ref, {
-      sellerId,
-      role,
-      bio: data.bio?.trim() ?? null,
-      isComplete: true,
-      displayName,
-      sellerCode,
+      ...payload,
       createdAt: now,
     });
   }

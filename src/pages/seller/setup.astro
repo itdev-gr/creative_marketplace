@@ -5,7 +5,7 @@ import { SELLER_ROLES } from '../../lib/types/role';
 
 <Layout title="Setup service profile – Creative Marketplace">
   <main class="min-h-screen flex items-center justify-center p-6">
-    <div class="w-full max-w-sm space-y-6">
+    <div class="w-full max-w-lg space-y-6">
       <h1 class="text-2xl font-bold text-center">Setup service profile</h1>
       <p class="text-sm text-gray-600 text-center">Add a profile for this service type. You'll appear on Discover once it's complete.</p>
       <form id="seller-setup-form" class="space-y-4">
@@ -23,13 +23,57 @@ import { SELLER_ROLES } from '../../lib/types/role';
           </select>
         </div>
         <div>
-          <label for="seller-bio" class="block text-sm font-medium text-gray-700">Short bio (optional)</label>
+          <label for="seller-title" class="block text-sm font-medium text-gray-700">Title</label>
+          <input
+            type="text"
+            id="seller-title"
+            name="title"
+            required
+            class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            placeholder="e.g. Wedding videography"
+          />
+        </div>
+        <div>
+          <label for="seller-bio" class="block text-sm font-medium text-gray-700">Description</label>
           <textarea
             id="seller-bio"
             name="bio"
             rows={3}
             class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
             placeholder="Describe your service..."
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Portfolio (up to 4 images)</label>
+          <p class="mt-0.5 text-xs text-gray-500">JPEG, PNG or WebP. Max 2MB each.</p>
+          <input
+            type="file"
+            id="seller-portfolio"
+            name="portfolio"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100"
+          />
+          <div id="seller-portfolio-preview" class="mt-2 flex flex-wrap gap-2"></div>
+        </div>
+        <div>
+          <label for="seller-charge" class="block text-sm font-medium text-gray-700">Charge</label>
+          <input
+            type="text"
+            id="seller-charge"
+            name="charge"
+            class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            placeholder="e.g. 50€/hour"
+          />
+        </div>
+        <div>
+          <label for="seller-equipment" class="block text-sm font-medium text-gray-700">Equipment</label>
+          <textarea
+            id="seller-equipment"
+            name="equipment"
+            rows={2}
+            class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            placeholder="List your equipment..."
           />
         </div>
         <div id="seller-setup-error" class="hidden text-sm text-red-600" role="alert"></div>
@@ -45,14 +89,18 @@ import { SELLER_ROLES } from '../../lib/types/role';
   </main>
   <script>
     import { subscribeAuth, getCurrentUser, isAuthReady } from '../../lib/firebase/authState';
-    import { createOrUpdateServiceProfile } from '../../lib/services/serviceProfilesService';
-    import { getServiceProfile } from '../../lib/services/serviceProfilesService';
+    import { createOrUpdateServiceProfile, getServiceProfile } from '../../lib/services/serviceProfilesService';
+    import { uploadPortfolioImages } from '../../lib/services/storageService';
     import { isRole } from '../../lib/types/role';
 
     const form = document.getElementById('seller-setup-form') as HTMLFormElement;
     const errorEl = document.getElementById('seller-setup-error') as HTMLDivElement;
     const submitBtn = document.getElementById('seller-setup-submit') as HTMLButtonElement;
     const roleSelect = form?.querySelector('[name="sellerRole"]') as HTMLSelectElement | null;
+    const portfolioInput = form?.querySelector('[name="portfolio"]') as HTMLInputElement | null;
+    const portfolioPreview = document.getElementById('seller-portfolio-preview') as HTMLDivElement | null;
+
+    let existingPortfolioUrls: string[] = [];
 
     function getRoleFromUrl(): string | null {
       const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
@@ -82,6 +130,34 @@ import { SELLER_ROLES } from '../../lib/types/role';
       }
     }
 
+    function renderPortfolioPreview(files: FileList | null, existingUrls: string[]) {
+      if (!portfolioPreview) return;
+      portfolioPreview.innerHTML = '';
+      if (files && files.length > 0) {
+        for (let i = 0; i < Math.min(files.length, 4); i++) {
+          const file = files[i];
+          if (!file.type.startsWith('image/')) continue;
+          const img = document.createElement('img');
+          img.src = URL.createObjectURL(file);
+          img.alt = file.name;
+          img.className = 'w-16 h-16 object-cover rounded border border-gray-200';
+          portfolioPreview.appendChild(img);
+        }
+      } else if (existingUrls.length > 0) {
+        existingUrls.forEach((url) => {
+          const img = document.createElement('img');
+          img.src = url;
+          img.alt = 'Portfolio';
+          img.className = 'w-16 h-16 object-cover rounded border border-gray-200';
+          portfolioPreview.appendChild(img);
+        });
+      }
+    }
+
+    portfolioInput?.addEventListener('change', () => {
+      renderPortfolioPreview(portfolioInput.files, []);
+    });
+
     form?.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!redirectIfNotSeller()) return;
@@ -90,21 +166,45 @@ import { SELLER_ROLES } from '../../lib/types/role';
       submitBtn.disabled = true;
       const roleFromUrl = getRoleFromUrl();
       const roleRaw = roleFromUrl && isRole(roleFromUrl) ? roleFromUrl : (roleSelect?.value ?? '');
-      const bio = (form.querySelector('[name="bio"]') as HTMLTextAreaElement).value.trim() || undefined;
       if (!isRole(roleRaw)) {
         errorEl.textContent = 'Please choose a valid service type.';
         errorEl.classList.remove('hidden');
         submitBtn.disabled = false;
         return;
       }
-      const uid = getCurrentUser()?.id;
-      if (!uid) {
-        console.log('[AuthSession] Redirecting to /login (reason: user null)');
-        window.location.href = '/login';
+      const title = (form.querySelector('[name="title"]') as HTMLInputElement)?.value?.trim();
+      if (!title) {
+        errorEl.textContent = 'Please enter a title.';
+        errorEl.classList.remove('hidden');
+        submitBtn.disabled = false;
         return;
       }
+      const uid = getCurrentUser()?.id;
+      if (!uid) {
+        window.location.href = '/login';
+        submitBtn.disabled = false;
+        return;
+      }
+      const bio = (form.querySelector('[name="bio"]') as HTMLTextAreaElement)?.value?.trim() || undefined;
+      const charge = (form.querySelector('[name="charge"]') as HTMLInputElement)?.value?.trim() || undefined;
+      const equipment = (form.querySelector('[name="equipment"]') as HTMLTextAreaElement)?.value?.trim() || undefined;
+      const files = portfolioInput?.files;
+
+      let portfolioUrls: string[] = existingPortfolioUrls;
+      if (files && files.length > 0) {
+        try {
+          portfolioUrls = await uploadPortfolioImages(uid, roleRaw, Array.from(files));
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Upload failed.';
+          errorEl.textContent = msg;
+          errorEl.classList.remove('hidden');
+          submitBtn.disabled = false;
+          return;
+        }
+      }
+
       try {
-        await createOrUpdateServiceProfile(uid, roleRaw, { bio });
+        await createOrUpdateServiceProfile(uid, roleRaw, { title, bio, portfolioUrls, charge, equipment });
         await new Promise((r) => setTimeout(r, 400));
         window.location.href = '/seller/services';
       } catch (err) {
@@ -122,8 +222,19 @@ import { SELLER_ROLES } from '../../lib/types/role';
       const role = getRoleFromUrl() ?? roleSelect?.value;
       if (!role || !isRole(role)) return;
       const existing = await getServiceProfile(user.id, role);
+      if (!existing) return;
+      const titleInput = form?.querySelector('[name="title"]') as HTMLInputElement | null;
       const bioInput = form?.querySelector('[name="bio"]') as HTMLTextAreaElement | null;
-      if (bioInput && existing?.bio) bioInput.value = existing.bio;
+      const chargeInput = form?.querySelector('[name="charge"]') as HTMLInputElement | null;
+      const equipmentInput = form?.querySelector('[name="equipment"]') as HTMLTextAreaElement | null;
+      if (titleInput && existing.title) titleInput.value = existing.title;
+      if (bioInput && existing.bio) bioInput.value = existing.bio;
+      if (chargeInput && existing.charge) chargeInput.value = existing.charge;
+      if (equipmentInput && existing.equipment) equipmentInput.value = existing.equipment;
+      if (existing.portfolioUrls && existing.portfolioUrls.length > 0) {
+        existingPortfolioUrls = existing.portfolioUrls;
+        renderPortfolioPreview(null, existingPortfolioUrls);
+      }
     }
 
     function init() {

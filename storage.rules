@@ -1,0 +1,11 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // serviceProfiles/{sellerId}_{role}/portfolio_0.jpg etc. - only owner can write, anyone can read
+    match /serviceProfiles/{ownerFolder}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && ownerFolder.matches('^' + request.auth.uid + '_.+');
+    }
+  }
+}
