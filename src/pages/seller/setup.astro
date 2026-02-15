@@ -56,6 +56,7 @@ import { SELLER_ROLES } from '../../lib/types/role';
       if (!isAuthReady()) return true;
       const user = getCurrentUser();
       if (!user) {
+        console.log('[AuthSession] Redirecting to /login (reason: user null)');
         window.location.href = '/login';
         return false;
       }
@@ -82,6 +83,7 @@ import { SELLER_ROLES } from '../../lib/types/role';
       }
       const uid = getCurrentUser()?.id;
       if (!uid) {
+        console.log('[AuthSession] Redirecting to /login (reason: user null)');
         window.location.href = '/login';
         return;
       }

@@ -79,7 +79,7 @@ import Layout from '../layouts/Layout.astro';
   </div>
 
   <script>
-    import { subscribeAuth, getCurrentUser } from '../lib/firebase/authState';
+    import { subscribeAuth, getCurrentUser, isAuthReady } from '../lib/firebase/authState';
     import { signOut, updateMode } from '../lib/services/authService';
     import { getCreatorsByRole } from '../lib/services/creatorsService';
     import { getListingsBySeller } from '../lib/services/listingsService';
@@ -295,12 +295,16 @@ import Layout from '../layouts/Layout.astro';
       if (user) {
         loadSection(activeRole);
       } else {
+        console.log('[AuthSession] Discover: showing sign-in UI (user=null, authReady=' + isAuthReady() + ')');
         showSignInToSeeCreators();
       }
     });
     const currentUser = getCurrentUser();
     redirectIfSellerInSellingMode(currentUser);
     if (!(currentUser?.profile?.accountType === 'seller' && currentUser.profile?.mode === 'selling')) {
+      if (!currentUser) {
+        console.log('[AuthSession] Discover: showing sign-in UI (user=null, authReady=' + isAuthReady() + ') [initial]');
+      }
       renderHeaderNav(currentUser);
     }
   </script>

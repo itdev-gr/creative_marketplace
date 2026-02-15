@@ -16,3 +16,7 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export { app };
+
+if (typeof window !== 'undefined') {
+  console.log('[AuthSession] Firebase Auth initialized (browser; default persistence is LOCAL)');
+}

@@ -27,6 +27,7 @@ import Layout from '../../layouts/Layout.astro';
       }
       const user = getCurrentUser();
       if (!user) {
+        console.log('[AuthSession] Redirecting to /login (reason: user null)');
         window.location.href = '/login';
         return;
       }

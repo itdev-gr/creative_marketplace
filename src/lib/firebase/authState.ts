@@ -32,12 +32,16 @@ export function isAuthReady(): boolean {
   return authReady;
 }
 
+const AUTH_SESSION_LOG = '[AuthSession]';
+
 if (typeof window !== 'undefined') {
   onAuthStateChanged(auth, async (firebaseUser) => {
+    console.log(AUTH_SESSION_LOG, 'onAuthStateChanged', firebaseUser ? { uid: firebaseUser.uid } : 'user=null');
     if (!firebaseUser) {
       cachedUser = null;
       authReady = true;
       notifyListeners();
+      console.log(AUTH_SESSION_LOG, 'auth state updated: user=null');
       return;
     }
     let profile: UserProfile | null = null;
@@ -52,7 +56,8 @@ if (typeof window !== 'undefined') {
         );
         profile = await getCurrentUserProfile(firebaseUser.uid);
       }
-    } catch {
+    } catch (err) {
+      console.warn(AUTH_SESSION_LOG, 'getCurrentUserProfile failed', err);
       // Still treat as logged-in; profile may load later or fail due to permissions
     }
     cachedUser = {
@@ -62,5 +67,6 @@ if (typeof window !== 'undefined') {
     };
     authReady = true;
     notifyListeners();
+    console.log(AUTH_SESSION_LOG, 'auth state updated:', { uid: firebaseUser.uid });
   });
 }
