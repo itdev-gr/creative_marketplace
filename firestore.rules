@@ -40,5 +40,11 @@ service cloud.firestore {
       allow update: if isBookingParticipant() && validStatusUpdate();
       allow delete: if false;
     }
+
+    match /listings/{listingId} {
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.sellerId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.sellerId == request.auth.uid;
+    }
   }
 }
