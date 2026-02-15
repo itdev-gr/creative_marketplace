@@ -55,10 +55,10 @@ describe('canBook', () => {
     expect(canBook(user, seller, 'uid-1', 'uid-2')).toBe(true);
   });
 
-  it('returns false when booker is user without canBuy', () => {
+  it('returns true when booker is buyer without canBuy (buyers can always book)', () => {
     const user = userProfile({ id: 'uid-1', canBuy: false });
     const seller = sellerProfile({ id: 'uid-2' });
-    expect(canBook(user, seller, 'uid-1', 'uid-2')).toBe(false);
+    expect(canBook(user, seller, 'uid-1', 'uid-2')).toBe(true);
   });
 
   it('returns true when booker is seller in buying mode and provider is seller', () => {
