@@ -25,6 +25,22 @@ export interface ServiceProfile {
   portfolioUrls: string[];
   charge: string | null;
   equipment: string | null;
+  /** Influencer: Instagram profile URL */
+  instagramUrl: string | null;
+  /** Influencer: Instagram follower count */
+  instagramFollowers: number | null;
+  /** Influencer: Facebook profile URL */
+  facebookUrl: string | null;
+  /** Influencer: Facebook follower count */
+  facebookFollowers: number | null;
+  /** Influencer: TikTok profile URL */
+  tiktokUrl: string | null;
+  /** Influencer: TikTok follower count */
+  tiktokFollowers: number | null;
+  /** Influencer: Website URL */
+  websiteUrl: string | null;
+  /** Influencer: Niche / area of focus */
+  niche: string | null;
   isComplete: boolean;
   displayName: string;
   sellerCode: string;
@@ -37,6 +53,11 @@ function docId(sellerId: string, role: Role): string {
 
 function snapshotToServiceProfile(data: Record<string, unknown>): ServiceProfile {
   const portfolio = data.portfolioUrls as string[] | undefined;
+  const num = (v: unknown): number | null => {
+    if (v == null) return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
   return {
     sellerId: data.sellerId as string,
     role: data.role as Role,
@@ -45,6 +66,14 @@ function snapshotToServiceProfile(data: Record<string, unknown>): ServiceProfile
     portfolioUrls: Array.isArray(portfolio) ? portfolio.slice(0, 4) : [],
     charge: (data.charge as string) ?? null,
     equipment: (data.equipment as string) ?? null,
+    instagramUrl: (data.instagramUrl as string) ?? null,
+    instagramFollowers: num(data.instagramFollowers),
+    facebookUrl: (data.facebookUrl as string) ?? null,
+    facebookFollowers: num(data.facebookFollowers),
+    tiktokUrl: (data.tiktokUrl as string) ?? null,
+    tiktokFollowers: num(data.tiktokFollowers),
+    websiteUrl: (data.websiteUrl as string) ?? null,
+    niche: (data.niche as string) ?? null,
     isComplete: (data.isComplete as boolean) ?? false,
     displayName: (data.displayName as string) ?? '',
     sellerCode: (data.sellerCode as string) ?? '',
@@ -76,6 +105,14 @@ export type ServiceProfileUpdateData = {
   portfolioUrls?: string[];
   charge?: string;
   equipment?: string;
+  instagramUrl?: string;
+  instagramFollowers?: number | null;
+  facebookUrl?: string;
+  facebookFollowers?: number | null;
+  tiktokUrl?: string;
+  tiktokFollowers?: number | null;
+  websiteUrl?: string;
+  niche?: string;
 };
 
 export async function createOrUpdateServiceProfile(
@@ -108,6 +145,14 @@ export async function createOrUpdateServiceProfile(
     portfolioUrls,
     charge: data.charge?.trim() ?? null,
     equipment: data.equipment?.trim() ?? null,
+    instagramUrl: data.instagramUrl?.trim() ?? null,
+    instagramFollowers: data.instagramFollowers ?? null,
+    facebookUrl: data.facebookUrl?.trim() ?? null,
+    facebookFollowers: data.facebookFollowers ?? null,
+    tiktokUrl: data.tiktokUrl?.trim() ?? null,
+    tiktokFollowers: data.tiktokFollowers ?? null,
+    websiteUrl: data.websiteUrl?.trim() ?? null,
+    niche: data.niche?.trim() ?? null,
     isComplete: true,
     displayName,
     sellerCode,

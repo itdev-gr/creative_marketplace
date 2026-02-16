@@ -63,6 +63,32 @@ import { SELLER_ROLES } from '../../lib/types/role';
             placeholder="List your equipment..."
           />
         </div>
+        <div id="influencer-fields" class="space-y-4 hidden">
+          <p class="text-sm font-medium text-gray-700">Social & presence (Influencer)</p>
+          <div class="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
+            <label for="seller-instagram" class="sm:col-span-2 text-xs font-medium text-gray-600">Instagram</label>
+            <input type="url" id="seller-instagram" name="instagramUrl" placeholder="Profile URL or @handle" class="rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
+            <input type="number" id="seller-instagram-followers" name="instagramFollowers" min="0" placeholder="Followers" class="rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 w-28" />
+          </div>
+          <div class="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
+            <label for="seller-facebook" class="sm:col-span-2 text-xs font-medium text-gray-600">Facebook</label>
+            <input type="url" id="seller-facebook" name="facebookUrl" placeholder="Profile URL" class="rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
+            <input type="number" id="seller-facebook-followers" name="facebookFollowers" min="0" placeholder="Followers" class="rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 w-28" />
+          </div>
+          <div class="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
+            <label for="seller-tiktok" class="sm:col-span-2 text-xs font-medium text-gray-600">TikTok</label>
+            <input type="url" id="seller-tiktok" name="tiktokUrl" placeholder="Profile URL" class="rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
+            <input type="number" id="seller-tiktok-followers" name="tiktokFollowers" min="0" placeholder="Followers" class="rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 w-28" />
+          </div>
+          <div>
+            <label for="seller-website" class="block text-xs font-medium text-gray-600">Website</label>
+            <input type="url" id="seller-website" name="websiteUrl" placeholder="https://..." class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
+          </div>
+          <div>
+            <label for="seller-niche" class="block text-xs font-medium text-gray-600">Niche</label>
+            <input type="text" id="seller-niche" name="niche" placeholder="e.g. Fashion, Fitness, Travel" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
+          </div>
+        </div>
         <div id="seller-setup-error" class="hidden text-sm text-red-600" role="alert"></div>
         <button
           type="submit"
@@ -83,6 +109,16 @@ import { SELLER_ROLES } from '../../lib/types/role';
     const errorEl = document.getElementById('seller-setup-error') as HTMLDivElement;
     const submitBtn = document.getElementById('seller-setup-submit') as HTMLButtonElement;
     const roleSelect = form?.querySelector('[name="sellerRole"]') as HTMLSelectElement | null;
+    const influencerFields = document.getElementById('influencer-fields') as HTMLDivElement | null;
+
+    function toggleInfluencerFields() {
+      if (!influencerFields || !roleSelect) return;
+      if (roleSelect.value === 'influencer') {
+        influencerFields.classList.remove('hidden');
+      } else {
+        influencerFields.classList.add('hidden');
+      }
+    }
 
     function getRoleFromUrl(): string | null {
       const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
@@ -110,7 +146,10 @@ import { SELLER_ROLES } from '../../lib/types/role';
         roleSelect.value = role;
         roleSelect.disabled = true;
       }
+      toggleInfluencerFields();
     }
+
+    roleSelect?.addEventListener('change', toggleInfluencerFields);
 
     form?.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -142,9 +181,24 @@ import { SELLER_ROLES } from '../../lib/types/role';
       const bio = (form.querySelector('[name="bio"]') as HTMLTextAreaElement)?.value?.trim() || undefined;
       const charge = (form.querySelector('[name="charge"]') as HTMLInputElement)?.value?.trim() || undefined;
       const equipment = (form.querySelector('[name="equipment"]') as HTMLTextAreaElement)?.value?.trim() || undefined;
+      const parseNum = (el: HTMLInputElement | null): number | null => {
+        if (!el?.value?.trim()) return null;
+        const n = Number(el.value.trim());
+        return Number.isFinite(n) ? n : null;
+      };
+      const influencerData = roleRaw === 'influencer' ? {
+        instagramUrl: (form.querySelector('[name="instagramUrl"]') as HTMLInputElement)?.value?.trim() || undefined,
+        instagramFollowers: parseNum(form.querySelector('[name="instagramFollowers"]') as HTMLInputElement),
+        facebookUrl: (form.querySelector('[name="facebookUrl"]') as HTMLInputElement)?.value?.trim() || undefined,
+        facebookFollowers: parseNum(form.querySelector('[name="facebookFollowers"]') as HTMLInputElement),
+        tiktokUrl: (form.querySelector('[name="tiktokUrl"]') as HTMLInputElement)?.value?.trim() || undefined,
+        tiktokFollowers: parseNum(form.querySelector('[name="tiktokFollowers"]') as HTMLInputElement),
+        websiteUrl: (form.querySelector('[name="websiteUrl"]') as HTMLInputElement)?.value?.trim() || undefined,
+        niche: (form.querySelector('[name="niche"]') as HTMLInputElement)?.value?.trim() || undefined,
+      } : {};
 
       try {
-        await createOrUpdateServiceProfile(uid, roleRaw, { title, bio, charge, equipment });
+        await createOrUpdateServiceProfile(uid, roleRaw, { title, bio, charge, equipment, ...influencerData });
         await new Promise((r) => setTimeout(r, 400));
         window.location.href = '/seller/services';
       } catch (err) {
@@ -171,6 +225,25 @@ import { SELLER_ROLES } from '../../lib/types/role';
       if (bioInput && existing.bio) bioInput.value = existing.bio;
       if (chargeInput && existing.charge) chargeInput.value = existing.charge;
       if (equipmentInput && existing.equipment) equipmentInput.value = existing.equipment;
+      toggleInfluencerFields();
+      if (role === 'influencer') {
+        const instagramUrlEl = form?.querySelector('[name="instagramUrl"]') as HTMLInputElement | null;
+        const instagramFollowersEl = form?.querySelector('[name="instagramFollowers"]') as HTMLInputElement | null;
+        const facebookUrlEl = form?.querySelector('[name="facebookUrl"]') as HTMLInputElement | null;
+        const facebookFollowersEl = form?.querySelector('[name="facebookFollowers"]') as HTMLInputElement | null;
+        const tiktokUrlEl = form?.querySelector('[name="tiktokUrl"]') as HTMLInputElement | null;
+        const tiktokFollowersEl = form?.querySelector('[name="tiktokFollowers"]') as HTMLInputElement | null;
+        const websiteUrlEl = form?.querySelector('[name="websiteUrl"]') as HTMLInputElement | null;
+        const nicheEl = form?.querySelector('[name="niche"]') as HTMLInputElement | null;
+        if (instagramUrlEl && existing.instagramUrl) instagramUrlEl.value = existing.instagramUrl;
+        if (instagramFollowersEl && existing.instagramFollowers != null) instagramFollowersEl.value = String(existing.instagramFollowers);
+        if (facebookUrlEl && existing.facebookUrl) facebookUrlEl.value = existing.facebookUrl;
+        if (facebookFollowersEl && existing.facebookFollowers != null) facebookFollowersEl.value = String(existing.facebookFollowers);
+        if (tiktokUrlEl && existing.tiktokUrl) tiktokUrlEl.value = existing.tiktokUrl;
+        if (tiktokFollowersEl && existing.tiktokFollowers != null) tiktokFollowersEl.value = String(existing.tiktokFollowers);
+        if (websiteUrlEl && existing.websiteUrl) websiteUrlEl.value = existing.websiteUrl;
+        if (nicheEl && existing.niche) nicheEl.value = existing.niche;
+      }
     }
 
     function init() {
@@ -181,6 +254,7 @@ import { SELLER_ROLES } from '../../lib/types/role';
         return;
       }
       applyRoleFromUrl();
+      toggleInfluencerFields();
       prefillForm();
     }
 
