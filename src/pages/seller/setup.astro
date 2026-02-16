@@ -44,19 +44,6 @@ import { SELLER_ROLES } from '../../lib/types/role';
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700">Portfolio (up to 4 images)</label>
-          <p class="mt-0.5 text-xs text-gray-500">JPEG, PNG or WebP. Max 2MB each.</p>
-          <input
-            type="file"
-            id="seller-portfolio"
-            name="portfolio"
-            accept="image/jpeg,image/png,image/webp"
-            multiple
-            class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100"
-          />
-          <div id="seller-portfolio-preview" class="mt-2 flex flex-wrap gap-2"></div>
-        </div>
-        <div>
           <label for="seller-charge" class="block text-sm font-medium text-gray-700">Charge</label>
           <input
             type="text"
@@ -90,17 +77,12 @@ import { SELLER_ROLES } from '../../lib/types/role';
   <script>
     import { subscribeAuth, getCurrentUser, isAuthReady } from '../../lib/firebase/authState';
     import { createOrUpdateServiceProfile, getServiceProfile } from '../../lib/services/serviceProfilesService';
-    import { uploadPortfolioImages } from '../../lib/services/storageService';
     import { isRole } from '../../lib/types/role';
 
     const form = document.getElementById('seller-setup-form') as HTMLFormElement;
     const errorEl = document.getElementById('seller-setup-error') as HTMLDivElement;
     const submitBtn = document.getElementById('seller-setup-submit') as HTMLButtonElement;
     const roleSelect = form?.querySelector('[name="sellerRole"]') as HTMLSelectElement | null;
-    const portfolioInput = form?.querySelector('[name="portfolio"]') as HTMLInputElement | null;
-    const portfolioPreview = document.getElementById('seller-portfolio-preview') as HTMLDivElement | null;
-
-    let existingPortfolioUrls: string[] = [];
 
     function getRoleFromUrl(): string | null {
       const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
@@ -129,34 +111,6 @@ import { SELLER_ROLES } from '../../lib/types/role';
         roleSelect.disabled = true;
       }
     }
-
-    function renderPortfolioPreview(files: FileList | null, existingUrls: string[]) {
-      if (!portfolioPreview) return;
-      portfolioPreview.innerHTML = '';
-      if (files && files.length > 0) {
-        for (let i = 0; i < Math.min(files.length, 4); i++) {
-          const file = files[i];
-          if (!file.type.startsWith('image/')) continue;
-          const img = document.createElement('img');
-          img.src = URL.createObjectURL(file);
-          img.alt = file.name;
-          img.className = 'w-16 h-16 object-cover rounded border border-gray-200';
-          portfolioPreview.appendChild(img);
-        }
-      } else if (existingUrls.length > 0) {
-        existingUrls.forEach((url) => {
-          const img = document.createElement('img');
-          img.src = url;
-          img.alt = 'Portfolio';
-          img.className = 'w-16 h-16 object-cover rounded border border-gray-200';
-          portfolioPreview.appendChild(img);
-        });
-      }
-    }
-
-    portfolioInput?.addEventListener('change', () => {
-      renderPortfolioPreview(portfolioInput.files, []);
-    });
 
     form?.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -188,23 +142,9 @@ import { SELLER_ROLES } from '../../lib/types/role';
       const bio = (form.querySelector('[name="bio"]') as HTMLTextAreaElement)?.value?.trim() || undefined;
       const charge = (form.querySelector('[name="charge"]') as HTMLInputElement)?.value?.trim() || undefined;
       const equipment = (form.querySelector('[name="equipment"]') as HTMLTextAreaElement)?.value?.trim() || undefined;
-      const files = portfolioInput?.files;
-
-      let portfolioUrls: string[] = existingPortfolioUrls;
-      if (files && files.length > 0) {
-        try {
-          portfolioUrls = await uploadPortfolioImages(uid, roleRaw, Array.from(files));
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : 'Upload failed.';
-          errorEl.textContent = msg;
-          errorEl.classList.remove('hidden');
-          submitBtn.disabled = false;
-          return;
-        }
-      }
 
       try {
-        await createOrUpdateServiceProfile(uid, roleRaw, { title, bio, portfolioUrls, charge, equipment });
+        await createOrUpdateServiceProfile(uid, roleRaw, { title, bio, charge, equipment });
         await new Promise((r) => setTimeout(r, 400));
         window.location.href = '/seller/services';
       } catch (err) {
@@ -231,10 +171,6 @@ import { SELLER_ROLES } from '../../lib/types/role';
       if (bioInput && existing.bio) bioInput.value = existing.bio;
       if (chargeInput && existing.charge) chargeInput.value = existing.charge;
       if (equipmentInput && existing.equipment) equipmentInput.value = existing.equipment;
-      if (existing.portfolioUrls && existing.portfolioUrls.length > 0) {
-        existingPortfolioUrls = existing.portfolioUrls;
-        renderPortfolioPreview(null, existingPortfolioUrls);
-      }
     }
 
     function init() {
