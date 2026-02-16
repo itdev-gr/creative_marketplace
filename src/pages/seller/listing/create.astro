@@ -1,0 +1,138 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+---
+
+<Layout title="Create a listing – Creative Marketplace">
+  <main class="min-h-screen flex items-center justify-center p-6">
+    <div class="w-full max-w-lg space-y-6">
+      <h1 class="text-2xl font-bold text-center">Create a listing</h1>
+      <p class="text-sm text-gray-600 text-center">Add a new listing for your service. You can edit or remove it later from My Services.</p>
+      <form id="listing-create-form" class="space-y-4">
+        <div>
+          <label for="listing-title" class="block text-sm font-medium text-gray-700">Title</label>
+          <input
+            type="text"
+            id="listing-title"
+            name="title"
+            required
+            class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            placeholder="e.g. 1-hour photoshoot"
+          />
+        </div>
+        <div>
+          <label for="listing-description" class="block text-sm font-medium text-gray-700">Description (optional)</label>
+          <textarea
+            id="listing-description"
+            name="description"
+            rows={3}
+            class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            placeholder="Short description of the offering"
+          />
+        </div>
+        <div>
+          <label for="listing-price" class="block text-sm font-medium text-gray-700">Price (optional)</label>
+          <input
+            type="text"
+            id="listing-price"
+            name="price"
+            class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            placeholder="e.g. 50€/hour"
+          />
+        </div>
+        <div id="listing-create-error" class="hidden text-sm text-red-600" role="alert"></div>
+        <button
+          type="submit"
+          id="listing-create-submit"
+          class="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 disabled:opacity-50"
+        >
+          Create listing
+        </button>
+      </form>
+      <p class="text-center">
+        <a href="/seller/services" class="text-sm text-indigo-600 hover:underline">← Back to My Services</a>
+      </p>
+    </div>
+  </main>
+  <script>
+    import { subscribeAuth, getCurrentUser, isAuthReady } from '../../../lib/firebase/authState';
+    import { createListing } from '../../../lib/services/listingsService';
+    import { isRole } from '../../../lib/types/role';
+
+    const form = document.getElementById('listing-create-form') as HTMLFormElement;
+    const errorEl = document.getElementById('listing-create-error') as HTMLDivElement;
+    const submitBtn = document.getElementById('listing-create-submit') as HTMLButtonElement;
+
+    function getRoleFromUrl(): string | null {
+      const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      return params?.get('role') ?? null;
+    }
+
+    function redirectIfNotSeller(): boolean {
+      if (!isAuthReady()) return true;
+      const user = getCurrentUser();
+      if (!user) {
+        window.location.href = '/login';
+        return false;
+      }
+      if (user.profile?.accountType !== 'seller') {
+        window.location.href = '/discover';
+        return false;
+      }
+      return true;
+    }
+
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!redirectIfNotSeller()) return;
+      const role = getRoleFromUrl();
+      if (!role || !isRole(role)) {
+        window.location.href = '/seller/services';
+        return;
+      }
+      errorEl.classList.add('hidden');
+      errorEl.textContent = '';
+      const title = (form.querySelector('[name="title"]') as HTMLInputElement)?.value?.trim();
+      if (!title) {
+        errorEl.textContent = 'Please enter a title.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+      const uid = getCurrentUser()?.id;
+      if (!uid) {
+        window.location.href = '/login';
+        return;
+      }
+      const description = (form.querySelector('[name="description"]') as HTMLTextAreaElement)?.value?.trim() || undefined;
+      const price = (form.querySelector('[name="price"]') as HTMLInputElement)?.value?.trim() || undefined;
+      submitBtn.disabled = true;
+      try {
+        await createListing(uid, { title, description, price, role });
+        window.location.href = '/seller/services';
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Failed to create listing.';
+        errorEl.textContent = msg;
+        errorEl.classList.remove('hidden');
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    function init() {
+      if (!redirectIfNotSeller()) return;
+      const role = getRoleFromUrl();
+      if (!role || !isRole(role)) {
+        window.location.href = '/seller/services';
+        return;
+      }
+    }
+
+    subscribeAuth(() => {
+      if (!redirectIfNotSeller()) return;
+      const role = getRoleFromUrl();
+      if (!role || !isRole(role)) {
+        window.location.href = '/seller/services';
+      }
+    });
+    init();
+  </script>
+</Layout>

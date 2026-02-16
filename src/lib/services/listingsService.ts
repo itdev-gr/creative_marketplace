@@ -23,6 +23,7 @@ function snapshotToListing(id: string, data: Record<string, unknown>): Listing {
     sellerId: data.sellerId as string,
     title: (data.title as string) ?? '',
     description: data.description as string | undefined,
+    price: (data.price as string) ?? null,
     role: data.role as Listing['role'],
     createdAt: data.createdAt as import('firebase/firestore').Timestamp,
   };
@@ -50,7 +51,7 @@ export async function getListingsBySeller(sellerId: string, role?: Role): Promis
 
 export async function createListing(
   sellerId: string,
-  data: { title: string; description?: string; role?: Role }
+  data: { title: string; description?: string; price?: string; role?: Role }
 ): Promise<string> {
   const uid = auth.currentUser?.uid;
   if (!uid || uid !== sellerId) throw new Error('Unauthorized');
@@ -59,6 +60,7 @@ export async function createListing(
     sellerId,
     title: data.title.trim(),
     description: data.description?.trim() || null,
+    price: data.price?.trim() || null,
     createdAt: serverTimestamp(),
   };
   if (data.role) payload.role = data.role;
@@ -70,7 +72,7 @@ export async function createListing(
 export async function updateListing(
   listingId: string,
   sellerId: string,
-  data: { title: string; description?: string }
+  data: { title: string; description?: string; price?: string }
 ): Promise<void> {
   const uid = auth.currentUser?.uid;
   if (!uid || uid !== sellerId) throw new Error('Unauthorized');
@@ -82,6 +84,7 @@ export async function updateListing(
   await updateDoc(ref, {
     title: data.title.trim(),
     description: data.description?.trim() || null,
+    price: data.price?.trim() ?? null,
   });
 }
 

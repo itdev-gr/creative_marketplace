@@ -6,6 +6,8 @@ export interface Listing {
   sellerId: string;
   title: string;
   description?: string;
+  /** Price, e.g. "50€/hour". */
+  price?: string | null;
   /** When set, listing is associated with a service profile (role). */
   role?: Role;
   createdAt: Timestamp;
